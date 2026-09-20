@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-09-20T12:00:00Z",
+  "generator": "Konfigurator_mluvici_kalkulacky/1.0",
+  "calculatorCompatibility": {
+    "minVersion": "11.5.0",
+    "maxVersion": null
+  },
+  "activeProfileId": "standard",
+  "profiles": [
+    {
+      "id": "standard",
+      "name": "Standardní",
+      "isBuiltIn": true,
+      "settings": {
+        "accessibilityType": "none",
+        "screenReaderMode": "auto",
+        "fontSizeMultiplier": 1.0,
+        "dialogFontScale": 1.0,
+        "dotMatrixZoom": 1.0,
+        "resultZoom": 1.0,
+        "thousandGroupGap": "medium",
+        "dialogSize": "compact",
+        "useSixteenSegment": false,
+        "usePeriodicNotation": true,
+        "announceExpression": false,
+        "readStatsMemoryValues": true,
+        "autoReadStatsSummary": true,
+        "showStatsNavigationHint": true,
+        "alignInputLeft": true,
+        "overlineThickness": 1.0,
+        "overlineHeight": 1.0,
+        "speechRate": 0.5,
+        "speechVolume": 1.0,
+        "ttsEnabled": true,
+        "ttsEngine": null,
+        "ttsVoice": null,
+        "ttsVoiceName": null,
+        "inverseFormatPreference": null
+      }
+    },
+    {
+      "id": "blind",
+      "name": "Nevidomý",
+      "isBuiltIn": true,
+      "settings": {
+        "accessibilityType": "blind",
+        "screenReaderMode": "auto",
+        "fontSizeMultiplier": 1.0,
+        "dialogFontScale": 1.0,
+        "dotMatrixZoom": 1.0,
+        "resultZoom": 1.0,
+        "thousandGroupGap": "medium",
+        "dialogSize": "compact",
+        "useSixteenSegment": false,
+        "usePeriodicNotation": true,
+        "announceExpression": true,
+        "readStatsMemoryValues": true,
+        "autoReadStatsSummary": true,
+        "showStatsNavigationHint": true,
+        "alignInputLeft": true,
+        "overlineThickness": 1.0,
+        "overlineHeight": 1.0,
+        "speechRate": 0.5,
+        "speechVolume": 1.0,
+        "ttsEnabled": true,
+        "ttsEngine": null,
+        "ttsVoice": null,
+        "ttsVoiceName": null,
+        "inverseFormatPreference": "dms"
+      }
+    }
+  ],
+  "globalSettings": {
+    "themeMode": "dark",
+    "isDegreeMode": true,
+    "defaultMode": "scientific",
+    "statsSummaryOrder": ["header", "dataValues", "computed"],
+    "statsComputedOrder": ["mean", "sum", "variance", "sd", "median", "min", "max", "mode", "cv", "wmean"],
+    "currency": {
+      "from": "CZK",
+      "to": "EUR"
+    },
+    "devMode": {
+      "enabled": false,
+      "autoDiagnostic": false,
+      "diagnosticDurationMs": 700
+    }
+  }
+}

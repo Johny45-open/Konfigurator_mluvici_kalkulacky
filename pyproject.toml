@@ -1,0 +1,28 @@
+[project]
+name = "konfigurator-mluvici-kalkulacky"
+version = "1.0.0"
+description = "Desktopovy konfigurator pro Mluvici kalkulacku"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "PyQt6>=6.7",
+    "jsonschema>=4.23",
+    "packaging>=24.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-qt>=4.4"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+qt_api = "pyqt6"
+
+[tool.ruff]
+line-length = 100
