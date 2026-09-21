@@ -286,3 +286,168 @@ class ConfigFile:
         d = self.to_dict(include_metadata=False)
         # Do not include createdAt/generator/calculatorCompatibility.maxVersion
         return d
+
+
+# --- Statisticke sady (oddělený kontrakt) ---
+STATISTICS_SCHEMA_VERSION = 1
+STATS_PALETTE_SIZE = 8
+STATS_ICON_NAMES = ("dataset", "school", "work", "home", "lab", "chart", "folder", "star")
+UNIT_NAMES = ("m","km","cm","mm","mi","yd","ft","in","kg","g","mg","t","lb","oz","m²","km²","ha","cm²","akr","l","ml","m³","gal","pt","Pa","hPa","kPa","bar","atm","psi","s","min","h","d","V","mV","µV","kV","MV","A","mA","µA","kA","Ω","mΩ","kΩ","MΩ","W","mW","kW","MW","GW")
+
+
+def generate_stats_id() -> str:
+    ts = int(datetime.datetime.now(tz=datetime.timezone.utc).timestamp() * 1_000_000)
+    rnd = random.randint(0, 1 << 32)
+    return f"{ts}_{rnd}"
+
+
+def strip_diacritics(s: str) -> str:
+    repl = {"á":"a","č":"c","ď":"d","é":"e","ě":"e","í":"i","ň":"n","ó":"o","ř":"r","š":"s","ť":"t","ú":"u","ů":"u","ý":"y","ž":"z","Á":"A","Č":"C","Ď":"D","É":"E","Ě":"E","Í":"I","Ň":"N","Ó":"O","Ř":"R","Š":"S","Ť":"T","Ú":"U","Ů":"U","Ý":"Y","Ž":"Z"}
+    for k,v in repl.items():
+        s = s.replace(k, v)
+    return s
+
+
+def normalize_name(s: str) -> str:
+    import re
+    return strip_diacritics(s.lower().replace(".", "").replace(",", "").strip()).strip()
+
+
+@dataclass
+class StatisticsRecord:
+    values: list[float]
+
+    def to_dict(self) -> dict:
+        return {"values": list(self.values)}
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "StatisticsRecord":
+        return cls(values=[float(v) for v in d.get("values", [])])
+
+
+@dataclass
+class StatisticsFolder:
+    id: str
+    name: str
+    colorIndex: int = 0
+    iconName: str = "folder"
+    sortOrder: int = 0
+    createdAt: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        d: dict = {"id": self.id, "name": self.name, "colorIndex": self.colorIndex, "iconName": self.iconName, "sortOrder": self.sortOrder}
+        if self.createdAt:
+            d["createdAt"] = self.createdAt
+        else:
+            d["createdAt"] = datetime.datetime.now(tz=datetime.timezone.utc).isoformat().replace("+00:00", "Z")
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "StatisticsFolder":
+        return cls(
+            id=str(d["id"]), name=str(d["name"]),
+            colorIndex=int(d.get("colorIndex", 0)), iconName=str(d.get("iconName", "folder")),
+            sortOrder=int(d.get("sortOrder", 0)), createdAt=d.get("createdAt")
+        )
+
+
+@dataclass
+class StatisticsSet:
+    id: str
+    name: str
+    fieldNames: list[str]
+    fieldUnits: list[Optional[str]] = field(default_factory=list)
+    records: list[StatisticsRecord] = field(default_factory=list)
+    folderId: Optional[str] = None
+    colorIndex: int = 0
+    iconName: str = "dataset"
+    pinned: bool = False
+    archived: bool = False
+    createdAt: Optional[str] = None
+    updatedAt: Optional[str] = None
+    lastUsedAt: Optional[str] = None
+
+    def __post_init__(self):
+        if not self.fieldUnits:
+            self.fieldUnits = [None] * len(self.fieldNames)
+        elif len(self.fieldUnits) != len(self.fieldNames):
+            # pad/truncate
+            self.fieldUnits = (self.fieldUnits + [None]*len(self.fieldNames))[:len(self.fieldNames)]
+
+    def to_dict(self) -> dict:
+        now = datetime.datetime.now(tz=datetime.timezone.utc).isoformat().replace("+00:00", "Z")
+        return {
+            "id": self.id, "name": self.name,
+            "fieldNames": list(self.fieldNames),
+            "fieldUnits": list(self.fieldUnits),
+            "records": [r.to_dict() for r in self.records],
+            "folderId": self.folderId,
+            "colorIndex": self.colorIndex, "iconName": self.iconName,
+            "pinned": self.pinned, "archived": self.archived,
+            "createdAt": self.createdAt or now,
+            "updatedAt": self.updatedAt or now,
+            "lastUsedAt": self.lastUsedAt or now,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "StatisticsSet":
+        # legacy 'data' -> single field
+        if "data" in d:
+            data = [float(v) for v in d.get("data", [])]
+            return cls(
+                id=str(d.get("id", generate_stats_id())), name=str(d.get("name", "Sada")),
+                fieldNames=["Hodnota"], fieldUnits=[None],
+                records=[StatisticsRecord(values=[v]) for v in data],
+                folderId=d.get("folderId"), colorIndex=int(d.get("colorIndex", 0)), iconName=str(d.get("iconName", "dataset")),
+                pinned=bool(d.get("pinned", False)), archived=bool(d.get("archived", False)),
+                createdAt=d.get("createdAt"), updatedAt=d.get("updatedAt"), lastUsedAt=d.get("lastUsedAt")
+            )
+        return cls(
+            id=str(d["id"]), name=str(d["name"]),
+            fieldNames=list(d["fieldNames"]),
+            fieldUnits=list(d.get("fieldUnits", [None]*len(d["fieldNames"]))),
+            records=[StatisticsRecord.from_dict(e) for e in d.get("records", [])],
+            folderId=d.get("folderId"), colorIndex=int(d.get("colorIndex", 0)), iconName=str(d.get("iconName", "dataset")),
+            pinned=bool(d.get("pinned", False)), archived=bool(d.get("archived", False)),
+            createdAt=d.get("createdAt"), updatedAt=d.get("updatedAt"), lastUsedAt=d.get("lastUsedAt")
+        )
+
+
+@dataclass
+class StatisticsFile:
+    schemaVersion: int = STATISTICS_SCHEMA_VERSION
+    createdAt: Optional[str] = None
+    generator: Optional[str] = None
+    minVersion: str = APP_VERSION
+    maxVersion: Optional[str] = None
+    folders: list[StatisticsFolder] = field(default_factory=list)
+    sets: list[StatisticsSet] = field(default_factory=list)
+    currentIndex: int = 0
+
+    def to_dict(self, include_metadata: bool = True) -> dict:
+        d: dict = {
+            "schemaVersion": self.schemaVersion,
+            "folders": [f.to_dict() for f in self.folders],
+            "sets": [s.to_dict() for s in self.sets],
+            "currentIndex": self.currentIndex,
+        }
+        if include_metadata:
+            d["createdAt"] = self.createdAt or datetime.datetime.now(tz=datetime.timezone.utc).isoformat().replace("+00:00", "Z")
+            d["generator"] = self.generator or f"Konfigurator_mluvici_kalkulacky/{__import__('konfigurator').__version__}"
+            d["statisticsCompatibility"] = {"minVersion": self.minVersion, "maxVersion": self.maxVersion}
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "StatisticsFile":
+        comp = d.get("statisticsCompatibility", {})
+        return cls(
+            schemaVersion=int(d.get("schemaVersion", 1)),
+            createdAt=d.get("createdAt"), generator=d.get("generator"),
+            minVersion=str(comp.get("minVersion", APP_VERSION)), maxVersion=comp.get("maxVersion"),
+            folders=[StatisticsFolder.from_dict(e) for e in d.get("folders", [])],
+            sets=[StatisticsSet.from_dict(e) for e in d.get("sets", [])],
+            currentIndex=int(d.get("currentIndex", 0)),
+        )
+
+    def canonical(self) -> dict:
+        return self.to_dict(include_metadata=False)

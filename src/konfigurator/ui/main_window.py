@@ -23,11 +23,12 @@ from PyQt6.QtWidgets import (
 
 from .. import models
 from ..io import save_config
-from ..models import AccessibilityProfile, ConfigFile, GlobalSettings
+from ..models import AccessibilityProfile, ConfigFile, GlobalSettings, StatisticsFile
 from ..workers import LoadWorker, SaveWorker
 from .dialogs import show_error, show_info, show_warning
 from .global_settings import GlobalSettingsWidget
 from .profile_editor import ProfileEditorDialog
+from .sets_tab import SetsTabWidget
 
 
 class MainWindow(QMainWindow):
@@ -37,6 +38,7 @@ class MainWindow(QMainWindow):
         self.setAccessibleName("Hlavni okno konfiguratoru mluvici kalkulacky")
         self.resize(1000, 700)
         self._config = self._default_config()
+        self._stats = StatisticsFile()
         self._current_file: str | None = None
         self._workers: list = []
         self._build_ui()
@@ -94,6 +96,10 @@ class MainWindow(QMainWindow):
         self.globalWidget = GlobalSettingsWidget(self._config.globalSettings)
         self.globalWidget.setAccessibleName("Zalozka globalni nastaveni")
         self.tabs.addTab(self.globalWidget, "Globalni")
+
+        # Tab Sady
+        self.setsTab = SetsTabWidget(self._stats)
+        self.tabs.addTab(self.setsTab, "Sady")
 
         # Tab Info
         self.tabInfo = QWidget()
@@ -307,6 +313,10 @@ class MainWindow(QMainWindow):
 
     def _collect_global(self) -> None:
         self._config.globalSettings = self.globalWidget.collect()
+        # sets tab drzi referenci na self._stats přímo, není třeba collect
+
+    def _sync_sets(self) -> None:
+        self._stats = self.setsTab.stats
 
     def _update_status(self) -> None:
         name = next((p.name for p in self._config.profiles if p.id == self._config.activeProfileId), self._config.activeProfileId)

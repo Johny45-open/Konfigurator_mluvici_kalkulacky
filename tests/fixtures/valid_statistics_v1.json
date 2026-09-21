@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-09-20T12:00:00Z",
+  "generator": "Konfigurator/1.0",
+  "statisticsCompatibility": {"minVersion":"11.5.0","maxVersion":null},
+  "currentIndex": 0,
+  "folders": [{"id":"f1","name":"Moje složka","colorIndex":2,"iconName":"folder","sortOrder":0,"createdAt":"2026-09-20T12:00:00Z"}],
+  "sets": [
+    {
+      "id":"s1","name":"Test sada","fieldNames":["Hodnota","Váha"],"fieldUnits":[null,"kg"],
+      "records":[{"values":[1,2]},{"values":[3,4]}],
+      "folderId":"f1","colorIndex":1,"iconName":"dataset","pinned":false,"archived":false,
+      "createdAt":"2026-09-20T12:00:00Z","updatedAt":"2026-09-20T12:00:00Z","lastUsedAt":"2026-09-20T12:00:00Z"
+    }
+  ]
+}
