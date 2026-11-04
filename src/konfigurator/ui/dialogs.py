@@ -1,4 +1,4 @@
-"""Spolecne dialogy."""
+"""Společné dialogy."""
 from PyQt6.QtWidgets import QMessageBox
 
 

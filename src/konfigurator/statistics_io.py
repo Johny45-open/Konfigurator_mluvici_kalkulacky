@@ -15,7 +15,7 @@ def load_raw(path) -> dict:
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
     if not isinstance(data, dict):
-        raise ValueError("Root musi byt objekt.")
+        raise ValueError("Root musí být objekt.")
     return data
 
 def load_statistics(path) -> tuple[StatisticsFile, ValidationResult]:
@@ -30,7 +30,7 @@ def save_statistics(sf: StatisticsFile, path) -> None:
     raw = sf.to_dict(include_metadata=True)
     vr = validate_statistics(raw)
     if not vr.ok:
-        raise ValueError(f"Nevalidni: {[e.message for e in vr.errors]}")
+        raise ValueError(f"Nevalidní: {[e.message for e in vr.errors]}")
     p = pathlib.Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=str(p.parent), prefix=".tmp_stats_", suffix=".json")
@@ -65,7 +65,7 @@ def merge_statistics(existing: StatisticsFile, incoming: StatisticsFile, on_conf
                 f.id=new_id
                 log.append(f"Slozka '{f.name}' id kolize → nove id {new_id}")
             else:
-                log.append(f"Slozka '{f.name}' jiz existuje — preskocena")
+                log.append(f"Složka '{f.name}' již existuje — přeskočena")
                 continue
         existing.folders.append(f)
         existing_folder_ids.add(f.id)
@@ -79,7 +79,7 @@ def merge_statistics(existing: StatisticsFile, incoming: StatisticsFile, on_conf
         norm = normalize_name(s.name)
         if norm in existing_norm:
             if on_conflict=="skip":
-                log.append(f"Sada '{s.name}' duplicitni — preskocena")
+                log.append(f"Sada '{s.name}' duplicitní — přeskočena")
                 continue
             elif on_conflict=="rename":
                 base=s.name; i=1
@@ -90,7 +90,7 @@ def merge_statistics(existing: StatisticsFile, incoming: StatisticsFile, on_conf
                 if s.id in existing_ids:
                     s.id=generate_stats_id()
                 existing.sets.append(s); existing_norm[normalize_name(s.name)]=s; existing_ids.add(s.id)
-                log.append(f"Sada '{s.name}' prejmenovana na '{base}'")
+                log.append(f"Sada '{s.name}' přejmenována na '{base}'")
             elif on_conflict=="overwrite":
                 target = existing_norm[norm]
                 # replace in place
@@ -99,12 +99,12 @@ def merge_statistics(existing: StatisticsFile, incoming: StatisticsFile, on_conf
                     s.id=generate_stats_id()
                 existing.sets[idx]=s
                 existing_norm[norm]=s
-                log.append(f"Sada '{s.name}' prepsana")
+                log.append(f"Sada '{s.name}' přepsána")
         else:
             if s.id in existing_ids:
                 s.id=generate_stats_id()
             existing.sets.append(s); existing_norm[norm]=s; existing_ids.add(s.id)
-            log.append(f"Sada '{s.name}' pridana")
+            log.append(f"Sada '{s.name}' přidána")
     # currentIndex clamp
     if existing.sets:
         existing.currentIndex = max(0, min(existing.currentIndex, len(existing.sets)-1))
@@ -133,11 +133,11 @@ def parse_csv(path_or_text: str, field_count: int, delimiter: str=";") -> list[S
             try:
                 vals.append(float(c))
             except ValueError:
-                raise ValueError(f"Neplatne cislo '{cell}' v radku {reader.line_num}")
+                raise ValueError(f"Neplatné číslo '{cell}' v řádku {reader.line_num}")
         # if row longer than field_count, error?
         if len(row) != field_count:
             # allow missing -> pad? but we require exact
             if len(row) < field_count:
-                raise ValueError(f"Radek {reader.line_num}: ocekavano {field_count} hodnot, nalezeno {len(row)}")
+                raise ValueError(f"Řádek {reader.line_num}: očekáváno {field_count} hodnot, nalezeno {len(row)}")
         records.append(StatisticsRecord(values=vals))
     return records

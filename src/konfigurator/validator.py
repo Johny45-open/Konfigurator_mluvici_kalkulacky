@@ -83,22 +83,22 @@ def _collect_unknown_keys(data: dict, result: ValidationResult) -> None:
 def validate_contract(data: Any) -> ValidationResult:
     result = ValidationResult()
     if not isinstance(data, dict):
-        result.errors.append(ValidationIssue(path="", message="Root musi byt objekt.", code="type"))
+        result.errors.append(ValidationIssue(path="", message="Root musí být objekt.", code="type"))
         return result
 
     # --- schemaVersion pred JSON Schema, abychom dali lepsi chybu pro future/old ---
     sv = data.get("schemaVersion")
     if sv is None:
-        result.errors.append(ValidationIssue(path="schemaVersion", message="Chybi schemaVersion.", code="required"))
+        result.errors.append(ValidationIssue(path="schemaVersion", message="Chybí schemaVersion.", code="required"))
         return result
     if not isinstance(sv, int):
-        result.errors.append(ValidationIssue(path="schemaVersion", message="schemaVersion musi byt integer.", code="type"))
+        result.errors.append(ValidationIssue(path="schemaVersion", message="schemaVersion musí být integer.", code="type"))
         return result
     if sv != 1:
         if sv > 1:
-            result.errors.append(ValidationIssue(path="schemaVersion", message=f"Nepodporovana budouci verze schemaVersion={sv} (podporovana je 1). Aktualizujte kalkulacku.", code="futureVersion"))
+            result.errors.append(ValidationIssue(path="schemaVersion", message=f"Nepodporovaná budoucí verze schemaVersion={sv} (podporovaná je 1). Aktualizujte kalkulačku.", code="futureVersion"))
         else:
-            result.errors.append(ValidationIssue(path="schemaVersion", message=f"Nepodporovana stara verze schemaVersion={sv} (podporovana je 1).", code="unsupportedVersion"))
+            result.errors.append(ValidationIssue(path="schemaVersion", message=f"Nepodporovaná stará verze schemaVersion={sv} (podporovaná je 1).", code="unsupportedVersion"))
         return result
 
     # --- vrstva A: JSON Schema ---
@@ -118,7 +118,7 @@ def validate_contract(data: Any) -> ValidationResult:
     if isinstance(profiles, list):
         ids = [p.get("id") for p in profiles if isinstance(p, dict)]
         if len(ids) != len(set(ids)):
-            result.errors.append(ValidationIssue(path="profiles", message="ID profilu musi byt unikatni.", code="unique"))
+            result.errors.append(ValidationIssue(path="profiles", message="ID profilu musí být unikátní.", code="unique"))
         # builtIn id rezervace: pokud isBuiltIn true ale id neni standard/blind/lowvision -> error
         for i, p in enumerate(profiles):
             if not isinstance(p, dict):
@@ -137,10 +137,10 @@ def validate_contract(data: Any) -> ValidationResult:
         # statsSummaryOrder uniqueness + length uz v schema, ale zkontrolujeme unikatnost explicitne
         order = gs.get("statsSummaryOrder")
         if isinstance(order, list) and len(order) != len(set(order)):
-            result.errors.append(ValidationIssue(path="globalSettings.statsSummaryOrder", message="statsSummaryOrder musi obsahovat unikatni hodnoty.", code="unique"))
+            result.errors.append(ValidationIssue(path="globalSettings.statsSummaryOrder", message="statsSummaryOrder musí obsahovat unikátní hodnoty.", code="unique"))
         corder = gs.get("statsComputedOrder")
         if isinstance(corder, list) and len(corder) != len(set(corder)):
-            result.errors.append(ValidationIssue(path="globalSettings.statsComputedOrder", message="statsComputedOrder musi obsahovat unikatni hodnoty.", code="unique"))
+            result.errors.append(ValidationIssue(path="globalSettings.statsComputedOrder", message="statsComputedOrder musí obsahovat unikátní hodnoty.", code="unique"))
 
     # Compatibility minVersion format already in schema, ale zkontrolujeme parsovatelnost
     comp = data.get("calculatorCompatibility")
@@ -151,6 +151,6 @@ def validate_contract(data: Any) -> ValidationResult:
                 from packaging.version import Version
                 Version(mv)
             except Exception:
-                result.errors.append(ValidationIssue(path="calculatorCompatibility.minVersion", message=f"Neplatny format verze '{mv}'.", code="format"))
+                result.errors.append(ValidationIssue(path="calculatorCompatibility.minVersion", message=f"Neplatný formát verze '{mv}'.", code="format"))
 
     return result

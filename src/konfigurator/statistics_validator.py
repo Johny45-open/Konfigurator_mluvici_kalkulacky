@@ -61,18 +61,18 @@ def _collect_unknown(data: dict, result: ValidationResult) -> None:
 def validate_statistics(data) -> ValidationResult:
     result = ValidationResult()
     if not isinstance(data, dict):
-        result.errors.append(ValidationIssue("", "Root musi byt objekt.", "type"))
+        result.errors.append(ValidationIssue("", "Root musí být objekt.", "type"))
         return result
     sv = data.get("schemaVersion")
     if sv is None:
-        result.errors.append(ValidationIssue("schemaVersion","Chybi schemaVersion.","required")); return result
+        result.errors.append(ValidationIssue("schemaVersion","Chybí schemaVersion.","required")); return result
     if not isinstance(sv, int):
-        result.errors.append(ValidationIssue("schemaVersion","schemaVersion musi byt int.","type")); return result
+        result.errors.append(ValidationIssue("schemaVersion","schemaVersion musí být int.","type")); return result
     if sv != 1:
         if sv > 1:
-            result.errors.append(ValidationIssue("schemaVersion", f"Nepodporovana budouci verze {sv}.","futureVersion"))
+            result.errors.append(ValidationIssue("schemaVersion", f"Nepodporovaná budoucí verze {sv}.","futureVersion"))
         else:
-            result.errors.append(ValidationIssue("schemaVersion", f"Nepodporovana stara verze {sv}.","unsupportedVersion"))
+            result.errors.append(ValidationIssue("schemaVersion", f"Nepodporovaná stará verze {sv}.","unsupportedVersion"))
         return result
     schema = load_schema()
     validator = jsonschema.Draft202012Validator(schema)
@@ -95,12 +95,12 @@ def validate_statistics(data) -> ValidationResult:
         fn = s.get("fieldNames")
         fu = s.get("fieldUnits")
         if isinstance(fn, list) and isinstance(fu, list) and len(fn)!=len(fu):
-            result.errors.append(ValidationIssue(f"sets[{i}].fieldUnits","fieldUnits delka musi odpovidat fieldNames.","length"))
+            result.errors.append(ValidationIssue(f"sets[{i}].fieldUnits","fieldUnits délka musí odpovídat fieldNames.","length"))
         # units enum already in schema but check values
         if isinstance(fu, list):
             for u in fu:
                 if u is not None and u != "--" and u not in UNIT_NAMES:
-                    result.errors.append(ValidationIssue(f"sets[{i}].fieldUnits","Neplatna jednotka "+str(u),"enum"))
+                    result.errors.append(ValidationIssue(f"sets[{i}].fieldUnits","Neplatná jednotka "+str(u),"enum"))
         # records length check
         if isinstance(fn, list):
             expected = len(fn)
@@ -108,21 +108,21 @@ def validate_statistics(data) -> ValidationResult:
                 if not isinstance(r, dict): continue
                 vals = r.get("values",[])
                 if isinstance(vals, list) and len(vals)!=expected:
-                    result.errors.append(ValidationIssue(f"sets[{i}].records[{ri}].values",f"Delka {len(vals)} != fieldNames {expected}.","length"))
+                    result.errors.append(ValidationIssue(f"sets[{i}].records[{ri}].values",f"Délka {len(vals)} != fieldNames {expected}.","length"))
                 for v in vals:
                     if not isinstance(v, (int,float)):
-                        result.errors.append(ValidationIssue(f"sets[{i}].records[{ri}].values","Hodnota musi byt cislo.","type"))
+                        result.errors.append(ValidationIssue(f"sets[{i}].records[{ri}].values","Hodnota musí být číslo.","type"))
                     elif v!=v or v==float('inf') or v==float('-inf'):
-                        result.errors.append(ValidationIssue(f"sets[{i}].records[{ri}].values","Hodnota nesmi byt NaN/Inf.","range"))
+                        result.errors.append(ValidationIssue(f"sets[{i}].records[{ri}].values","Hodnota nesmí být NaN/Inf.","range"))
         # folderId existence
         fid = s.get("folderId")
         if fid is not None and fid not in folder_ids:
             result.errors.append(ValidationIssue(f"sets[{i}].folderId",f"folderId '{fid}' neexistuje.","existence"))
     if len(set_ids)!=len(set(set_ids)):
-        result.errors.append(ValidationIssue("sets","ID sad musi byt unikatni.","unique"))
+        result.errors.append(ValidationIssue("sets","ID sad musí být unikátní.","unique"))
     folder_ids_list = [f.get("id") for f in folders if isinstance(f, dict)]
     if len(folder_ids_list)!=len(set(folder_ids_list)):
-        result.errors.append(ValidationIssue("folders","ID slozek musi byt unikatni.","unique"))
+        result.errors.append(ValidationIssue("folders","ID složek musí být unikátní.","unique"))
     ci = data.get("currentIndex")
     if isinstance(ci, int) and isinstance(sets, list) and sets:
         if ci <0 or ci >= len(sets):
@@ -135,5 +135,5 @@ def validate_statistics(data) -> ValidationResult:
             try:
                 from packaging.version import Version; Version(mv)
             except Exception:
-                result.errors.append(ValidationIssue("statisticsCompatibility.minVersion", f"Neplatny format '{mv}'.","format"))
+                result.errors.append(ValidationIssue("statisticsCompatibility.minVersion", f"Neplatný formát '{mv}'.","format"))
     return result

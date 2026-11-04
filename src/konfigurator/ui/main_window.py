@@ -34,8 +34,8 @@ from .sets_tab import SetsTabWidget
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Konfigurator mluvici kalkulacky")
-        self.setAccessibleName("Hlavni okno konfiguratoru mluvici kalkulacky")
+        self.setWindowTitle("Konfigurátor mluvící kalkulačky")
+        self.setAccessibleName("Hlavní okno konfigurátoru mluvící kalkulačky")
         self.resize(1000, 700)
         self._config = self._default_config()
         self._stats = StatisticsFile()
@@ -47,28 +47,28 @@ class MainWindow(QMainWindow):
 
     def _default_config(self) -> ConfigFile:
         profiles = [
-            AccessibilityProfile(id="standard", name="Standardni", isBuiltIn=True, settings=models.AccessibilitySettings.defaults_standard()),
-            AccessibilityProfile(id="blind", name="Nevidomy", isBuiltIn=True, settings=models.AccessibilitySettings.defaults_blind()),
-            AccessibilityProfile(id="lowvision", name="Slabozraky", isBuiltIn=True, settings=models.AccessibilitySettings.defaults_low_vision()),
+            AccessibilityProfile(id="standard", name="Standardní", isBuiltIn=True, settings=models.AccessibilitySettings.defaults_standard()),
+            AccessibilityProfile(id="blind", name="Nevidomý", isBuiltIn=True, settings=models.AccessibilitySettings.defaults_blind()),
+            AccessibilityProfile(id="lowvision", name="Slabozraký", isBuiltIn=True, settings=models.AccessibilitySettings.defaults_low_vision()),
         ]
         return ConfigFile(activeProfileId="standard", profiles=profiles, globalSettings=GlobalSettings())
 
     def _build_ui(self) -> None:
         central = QWidget()
-        central.setAccessibleName("Hlavni obsah")
+        central.setAccessibleName("Hlavní obsah")
         self.setCentralWidget(central)
         root = QVBoxLayout(central)
 
-        # Top bar: Novy / Otevrit / Ulozit / Ulozit jako
+        # Top bar: Nový / Otevřít / Uložit / Uložit jako
         top = QHBoxLayout()
-        self.btnNew = QPushButton("Novy")
-        self.btnNew.setAccessibleName("Vytvorit novou konfiguraci")
-        self.btnOpen = QPushButton("Otevrit…")
-        self.btnOpen.setAccessibleName("Otevrit konfiguracni soubor")
-        self.btnSave = QPushButton("Ulozit")
-        self.btnSave.setAccessibleName("Ulozit konfiguraci")
-        self.btnSaveAs = QPushButton("Ulozit jako…")
-        self.btnSaveAs.setAccessibleName("Ulozit konfiguraci jako")
+        self.btnNew = QPushButton("Nový")
+        self.btnNew.setAccessibleName("Vytvořit novou konfiguraci")
+        self.btnOpen = QPushButton("Otevřít…")
+        self.btnOpen.setAccessibleName("Otevřít konfigurační soubor")
+        self.btnSave = QPushButton("Uložit")
+        self.btnSave.setAccessibleName("Uložit konfiguraci")
+        self.btnSaveAs = QPushButton("Uložit jako…")
+        self.btnSaveAs.setAccessibleName("Uložit konfiguraci jako")
         self.btnValidate = QPushButton("Zkontrolovat")
         self.btnValidate.setAccessibleName("Zkontrolovat konfiguraci")
         for b in (self.btnNew, self.btnOpen, self.btnSave, self.btnSaveAs, self.btnValidate):
@@ -83,19 +83,19 @@ class MainWindow(QMainWindow):
 
         # Tabs
         self.tabs = QTabWidget()
-        self.tabs.setAccessibleName("Zalozky konfigurace")
+        self.tabs.setAccessibleName("Záložky konfigurace")
         root.addWidget(self.tabs)
 
         # Tab Profily
         self.tabProfiles = QWidget()
-        self.tabProfiles.setAccessibleName("Zalozka profily")
+        self.tabProfiles.setAccessibleName("Záložka profily")
         self.tabs.addTab(self.tabProfiles, "Profily")
         self._build_profiles_tab()
 
         # Tab Global
         self.globalWidget = GlobalSettingsWidget(self._config.globalSettings)
-        self.globalWidget.setAccessibleName("Zalozka globalni nastaveni")
-        self.tabs.addTab(self.globalWidget, "Globalni")
+        self.globalWidget.setAccessibleName("Záložka globální nastavení")
+        self.tabs.addTab(self.globalWidget, "Globální")
 
         # Tab Sady
         self.setsTab = SetsTabWidget(self._stats)
@@ -103,13 +103,13 @@ class MainWindow(QMainWindow):
 
         # Tab Info
         self.tabInfo = QWidget()
-        self.tabInfo.setAccessibleName("Zalozka informace")
+        self.tabInfo.setAccessibleName("Záložka informace")
         self.tabs.addTab(self.tabInfo, "Info")
         self._build_info_tab()
 
         # Status
         self.statusLabel = QLabel("")
-        self.statusLabel.setAccessibleName("Stavova zprava")
+        self.statusLabel.setAccessibleName("Stavová zpráva")
         root.addWidget(self.statusLabel)
 
         # Tab order
@@ -124,33 +124,33 @@ class MainWindow(QMainWindow):
         # Left: list
         left = QVBoxLayout()
         self.profileList = QListWidget()
-        self.profileList.setAccessibleName("Seznam profilu")
-        self.profileList.setAccessibleDescription("Vyberte profil pro upravu. Pouzijte sipky a Tab.")
+        self.profileList.setAccessibleName("Seznam profilů")
+        self.profileList.setAccessibleDescription("Vyberte profil pro úpravu. Použijte šipky a Tab.")
         self.profileList.currentRowChanged.connect(self._on_profile_selected)
         left.addWidget(QLabel("Profily:"))
         left.addWidget(self.profileList)
         # Active combo
         self.activeCombo = QComboBox()
-        self.activeCombo.setAccessibleName("Aktivni profil")
-        self.activeCombo.setAccessibleDescription("Vyberte ktery profil bude aktivni po importu")
-        left.addWidget(QLabel("Aktivni profil:"))
+        self.activeCombo.setAccessibleName("Aktivní profil")
+        self.activeCombo.setAccessibleDescription("Vyberte který profil bude aktivní po importu")
+        left.addWidget(QLabel("Aktivní profil:"))
         left.addWidget(self.activeCombo)
         self.activeCombo.currentIndexChanged.connect(self._on_active_changed)
         layout.addLayout(left, 2)
         # Right: buttons
         right = QVBoxLayout()
         self.btnEdit = QPushButton("Upravit…")
-        self.btnEdit.setAccessibleName("Upravit vybrany profil")
+        self.btnEdit.setAccessibleName("Upravit vybraný profil")
         self.btnDuplicate = QPushButton("Duplikovat")
-        self.btnDuplicate.setAccessibleName("Duplikovat vybrany profil")
-        self.btnCreate = QPushButton("Vytvorit novy")
-        self.btnCreate.setAccessibleName("Vytvorit novy profil")
-        self.btnRename = QPushButton("Prejmenovat…")
-        self.btnRename.setAccessibleName("Prejmenovat vybrany profil")
+        self.btnDuplicate.setAccessibleName("Duplikovat vybraný profil")
+        self.btnCreate = QPushButton("Vytvořit nový")
+        self.btnCreate.setAccessibleName("Vytvořit nový profil")
+        self.btnRename = QPushButton("Přejmenovat…")
+        self.btnRename.setAccessibleName("Přejmenovat vybraný profil")
         self.btnDelete = QPushButton("Smazat")
-        self.btnDelete.setAccessibleName("Smazat vybrany profil")
-        self.btnSetActive = QPushButton("Nastavit jako aktivni")
-        self.btnSetActive.setAccessibleName("Nastavit vybrany profil jako aktivni")
+        self.btnDelete.setAccessibleName("Smazat vybraný profil")
+        self.btnSetActive = QPushButton("Nastavit jako aktivní")
+        self.btnSetActive.setAccessibleName("Nastavit vybraný profil jako aktivní")
         for b in (self.btnEdit, self.btnDuplicate, self.btnCreate, self.btnRename, self.btnDelete, self.btnSetActive):
             right.addWidget(b)
         right.addStretch()
@@ -167,15 +167,15 @@ class MainWindow(QMainWindow):
     def _build_info_tab(self) -> None:
         layout = QVBoxLayout(self.tabInfo)
         info = QLabel(
-            "Konfigurator vytvari prenositelny JSON soubor s konfiguraci mluvici kalkulacky.\n"
-            "Soubor ulozte a prenesete do telefonu (USB, e-mail, cloud) a importujte v kalkulacce: Nastaveni → Zalohovani → Import kontraktu.\n"
-            "Schema verze 1, kompatibilita minVersion 11.5.0.\n"
-            "Vestavene profily standard/blind/lowvision nelze smazat, lze je resetovat na vychozi.\n"
-            "Zmena jednoho profilu neovlivni jiny profil (izolace).\n"
-            "Vsechny ovladaci prvky jsou ovladatelne klavesnici: Tab, Shift+Tab, Enter, Space, Esc, sipky."
+            "Konfigurátor vytváří přenositelný JSON soubor s konfigurací mluvící kalkulačky.\n"
+            "Soubor uložte a přeneste do telefonu (USB, e-mail, cloud) a importujte v kalkulačce: Nastavení → Zálohování → Import kontraktu.\n"
+            "Schéma verze 1, kompatibilita minVersion 11.5.0.\n"
+            "Vestavěné profily standard/blind/lowvision nelze smazat, lze je resetovat na výchozí.\n"
+            "Změna jednoho profilu neovlivní jiný profil (izolace).\n"
+            "Všechny ovládací prvky jsou ovladatelné klávesnicí: Tab, Shift+Tab, Enter, Space, Esc, šipky."
         )
         info.setWordWrap(True)
-        info.setAccessibleName("Informace o konfiguratoru")
+        info.setAccessibleName("Informace o konfigurátoru")
         info.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.TextSelectableByKeyboard)
         layout.addWidget(info)
         self.compatLabel = QLabel("")
@@ -251,7 +251,7 @@ class MainWindow(QMainWindow):
         new_id = models.generate_custom_id("Novy profil")
         prof = AccessibilityProfile(id=new_id, name="Novy profil", isBuiltIn=False, settings=models.AccessibilitySettings.defaults_standard())
         dlg = ProfileEditorDialog(prof, self)
-        dlg.setWindowTitle("Vytvorit novy profil")
+        dlg.setWindowTitle("Vytvorřit nový profil")
         if dlg.exec() == dlg.DialogCode.Accepted:
             new_prof = dlg.result_profile()
             # ensure id is still unique
@@ -267,18 +267,18 @@ class MainWindow(QMainWindow):
             return
         prof = self._config.profiles[row]
         if prof.isBuiltIn:
-            show_warning(self, "Nelze prejmenovat", "Vestavene profily nelze prejmenovat.")
+            show_warning(self, "Nelze přejmenovat", "Vestavěné profily nelze přejmenovat.")
             return
         from PyQt6.QtWidgets import QInputDialog
 
-        text, ok = QInputDialog.getText(self, "Prejmenovat profil", "Novy nazev:", text=prof.name)
+        text, ok = QInputDialog.getText(self, "Přejmenovat profil", "Nový název:", text=prof.name)
         if ok:
             name = text.strip()
             if not name:
-                show_error(self, "Chyba", "Nazev nesmi byt prazdny.")
+                show_error(self, "Chyba", "Název nesmí být prázdný.")
                 return
             if any(p.name.lower() == name.lower() for p in self._config.profiles if p.id != prof.id):
-                show_error(self, "Chyba", "Profil s timto nazvem jiz existuje.")
+                show_error(self, "Chyba", "Profil s tímto názvem již existuje.")
                 return
             prof.name = name
             self._refresh_profile_list()
@@ -290,7 +290,7 @@ class MainWindow(QMainWindow):
             return
         prof = self._config.profiles[row]
         if prof.isBuiltIn:
-            show_warning(self, "Nelze smazat", "Vestavene profily nelze smazat. Muzete je resetovat na vychozi v kalkulacce.")
+            show_warning(self, "Nelze smazat", "Vestavěné profily nelze smazat. Můžete je resetovat na výchozí v kalkulačce.")
             return
         ret = QMessageBox.question(self, "Smazat profil", f"Opravdu smazat profil '{prof.name}'?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if ret != QMessageBox.StandardButton.Yes:
@@ -320,12 +320,12 @@ class MainWindow(QMainWindow):
 
     def _update_status(self) -> None:
         name = next((p.name for p in self._config.profiles if p.id == self._config.activeProfileId), self._config.activeProfileId)
-        self.statusLabel.setText(f"Aktivni profil: {name}  |  Profilu: {len(self._config.profiles)}  |  Soubor: {self._current_file or 'neulozeno'}")
-        self.compatLabel.setText(f"Kompatibilita: minVersion {self._config.minVersion}, schema {self._config.schemaVersion}")
+        self.statusLabel.setText(f"Aktivní profil: {name}  |  Profilů: {len(self._config.profiles)}  |  Soubor: {self._current_file or 'neuloženo'}")
+        self.compatLabel.setText(f"Kompatibilita: minVersion {self._config.minVersion}, schéma {self._config.schemaVersion}")
 
     # --- File ops with workers ---
     def on_new(self) -> None:
-        ret = QMessageBox.question(self, "Novy", "Zahodit aktualni konfiguraci a vytvorit novou vychozi?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        ret = QMessageBox.question(self, "Nový", "Zahodit aktuální konfiguraci a vytvořit novou výchozí?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if ret != QMessageBox.StandardButton.Yes:
             return
         self._config = self._default_config()
@@ -335,13 +335,13 @@ class MainWindow(QMainWindow):
         self._update_status()
 
     def on_open(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, "Otevrit konfiguraci", "", "JSON (*.json);;Vsechny (*.*)")
+        path, _ = QFileDialog.getOpenFileName(self, "Otevřít konfiguraci", "", "JSON (*.json);;Všechny (*.*)")
         if not path:
             return
         worker = LoadWorker(path)
         worker.finished_ok.connect(self._on_load_ok)
         worker.finished_warn.connect(self._on_load_warn)
-        worker.error.connect(lambda msg: show_error(self, "Chyba pri nacitani", msg))
+        worker.error.connect(lambda msg: show_error(self, "Chyba při načítání", msg))
         worker.finished_ok.connect(lambda *_: self._workers.remove(worker) if worker in self._workers else None)
         worker.finished_warn.connect(lambda *_: self._workers.remove(worker) if worker in self._workers else None)
         worker.error.connect(lambda *_: self._workers.remove(worker) if worker in self._workers else None)
@@ -358,12 +358,12 @@ class MainWindow(QMainWindow):
         # Simplify: ask user to Save As
         self._refresh_profile_list()
         self._update_status()
-        show_info(self, "Nacteno", f"Konfigurace nactena ({len(cfg.profiles)} profilu). Zkontrolujte aktivni profil.")
+        show_info(self, "Načteno", f"Konfigurace načtena ({len(cfg.profiles)} profilů). Zkontrolujte aktivní profil.")
 
     def _on_load_warn(self, cfg: ConfigFile, vr) -> None:
         self._on_load_ok(cfg, vr)
         warns = "\n".join(f"{w.path}: {w.message}" for w in vr.warnings)
-        show_warning(self, "Varovani", f"Konfigurace nactena s varovanimi (neznama pole ignorovana):\n{warns}")
+        show_warning(self, "Varování", f"Konfigurace načtena s varováními (neznámá pole ignorována):\n{warns}")
 
     def on_save(self) -> None:
         if self._current_file:
@@ -372,7 +372,7 @@ class MainWindow(QMainWindow):
             self.on_save_as()
 
     def on_save_as(self) -> None:
-        path, _ = QFileDialog.getSaveFileName(self, "Ulozit konfiguraci", "mluvici_kalkulacka_config_v1.json", "JSON (*.json)")
+        path, _ = QFileDialog.getSaveFileName(self, "Uložit konfiguraci", "mluvici_kalkulacka_config_v1.json", "JSON (*.json)")
         if not path:
             return
         self._do_save(path)
@@ -390,10 +390,10 @@ class MainWindow(QMainWindow):
             return
         if vr.warnings:
             warns = "\n".join(f"{w.path}: {w.message}" for w in vr.warnings)
-            show_warning(self, "Varovani", warns)
+            show_warning(self, "Varování", warns)
         worker = SaveWorker(self._config, path)
         worker.finished_ok.connect(lambda p: self._on_save_ok(p))
-        worker.error.connect(lambda msg: show_error(self, "Chyba pri ukladani", msg))
+        worker.error.connect(lambda msg: show_error(self, "Chyba při ukládání", msg))
         worker.finished_ok.connect(lambda *_: self._workers.remove(worker) if worker in self._workers else None)
         worker.error.connect(lambda *_: self._workers.remove(worker) if worker in self._workers else None)
         self._workers.append(worker)
@@ -402,7 +402,7 @@ class MainWindow(QMainWindow):
     def _on_save_ok(self, path: str) -> None:
         self._current_file = path
         self._update_status()
-        show_info(self, "Ulozeno", f"Konfigurace ulozena:\n{path}\n\nPreneste soubor do telefonu a importujte v kalkulacce: Nastaveni → Import kontraktu.")
+        show_info(self, "Uloženo", f"Konfigurace uložena:\n{path}\n\nPřeneste soubor do telefonu a importujte v kalkulačce: Nastavení → Import kontraktu.")
 
     def on_validate(self) -> None:
         self._collect_global()
@@ -411,10 +411,10 @@ class MainWindow(QMainWindow):
         raw = self._config.to_dict(include_metadata=True)
         vr = validate_contract(raw)
         if vr.ok and not vr.warnings:
-            show_info(self, "Validace", "Konfigurace je validni.")
+            show_info(self, "Validace", "Konfigurace je validní.")
         elif vr.ok and vr.warnings:
             warns = "\n".join(f"{w.path}: {w.message}" for w in vr.warnings)
-            show_warning(self, "Validace s varovanim", f"Validni, ale s varovanimi:\n{warns}")
+            show_warning(self, "Validace s varováním", f"Validní, ale s varováními:\n{warns}")
         else:
             msgs = "\n".join(f"{e.path}: {e.message}" for e in vr.errors)
-            show_error(self, "Nevalidni", msgs)
+            show_error(self, "Nevalidní", msgs)

@@ -15,7 +15,7 @@ def load_raw(path: str | pathlib.Path) -> dict:
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
     if not isinstance(data, dict):
-        raise ValueError("Root JSON musi byt objekt.")
+        raise ValueError("Root JSON musí být objekt.")
     return data
 
 
@@ -32,7 +32,7 @@ def save_config(cfg: models.ConfigFile, path: str | pathlib.Path) -> None:
     raw = cfg.to_dict(include_metadata=True)
     vr = validate_contract(raw)
     if not vr.ok:
-        raise ValueError(f"Nelze ulozit nevalidni konfiguraci: {[e.message for e in vr.errors]}")
+        raise ValueError(f"Nelze uložit nevalidní konfiguraci: {[e.message for e in vr.errors]}")
     # Atomicky zapis: temp file + rename
     p = pathlib.Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -65,7 +65,7 @@ def canonicalize_dict(raw: dict) -> dict:
 
 
 def save_raw_atomic(raw: dict, path: str | pathlib.Path) -> None:
-    """Ulozi raw dict atomicky (bez validace)."""
+    """Ulozž raw dict atomicky (bez validace)."""
     p = pathlib.Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_path = tempfile.mkstemp(dir=str(p.parent), prefix=".tmp_", suffix=".json")

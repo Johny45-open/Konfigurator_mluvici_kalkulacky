@@ -8,9 +8,9 @@ from .ui.main_window import MainWindow
 
 def main() -> None:
     app = QApplication(sys.argv)
-    app.setApplicationName("Konfigurator mluvici kalkulacky")
+    app.setApplicationName("Konfigurátor mluvící kalkulačky")
     app.setOrganizationName("MluviciKalkulacka")
-    # Pro NVDA: umoznit pristupnost
+    # Pro NVDA:umožnit přístupnost
     w = MainWindow()
     w.show()
     sys.exit(app.exec())

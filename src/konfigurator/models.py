@@ -23,6 +23,37 @@ STATS_SUMMARY_SECTIONS = ("header", "dataValues", "computed")
 STATS_COMPUTED_ITEMS = ("mean", "sum", "variance", "sd", "median", "min", "max", "mode", "cv", "wmean")
 INVERSE_PREFS = ("dms", "decimal")
 
+# --- ceske zobrazeni vyse uvedenych hodnot (v UI; do souboru se pisi anglicke enumy) ---
+THEME_LABELS = {"light": "Světlé", "dark": "Tmavé"}
+CALCULATOR_MODE_LABELS = {
+    "basic": "Základní",
+    "scientific": "Vědecká",
+    "statistics": "Statistika",
+    "electrician": "Elektroinstalatér",
+    "unitConversion": "Převod jednotek",
+    "time": "Čas",
+    "currency": "Měny",
+}
+SCREEN_READER_LABELS = {"auto": "Automaticky", "on": "Zapnuto", "off": "Vypnuto"}
+ACCESSIBILITY_TYPE_LABELS = {"none": "Žádný", "blind": "Nevidomý", "visuallyImpaired": "Slabozraký"}
+THOUSAND_GAP_LABELS = {"small": "Malá", "medium": "Střední", "large": "Velká"}
+DIALOG_SIZE_LABELS = {"compact": "Kompaktní", "wide": "Široký", "fullscreen": "Na celou obrazovku"}
+INVERSE_PREF_LABELS = {"dms": "DMS (° ′ ″)", "decimal": "Desetinný"}
+SUMMARY_SECTION_LABELS = {"header": "Hlavička", "dataValues": "Hodnoty dat", "computed": "Vypočtené"}
+COMPUTED_ITEM_LABELS = {
+    "mean": "Průměr",
+    "sum": "Součet",
+    "variance": "Disperze",
+    "sd": "Sm. odchylka",
+    "median": "Medián",
+    "min": "Minimum",
+    "max": "Maximum",
+    "mode": "Módus",
+    "cv": "Variac. koef.",
+    "wmean": "Vážený průměr",
+}
+
+
 
 def generate_custom_id(name: str) -> str:
     ts = int(datetime.datetime.now(tz=datetime.timezone.utc).timestamp() * 1_000_000)
