@@ -22,6 +22,7 @@ from PyQt6.QtWidgets import (
 )
 
 from .. import models
+from ..announce import announce
 from ..io import save_config
 from ..models import AccessibilityProfile, ConfigFile, GlobalSettings, StatisticsFile
 from ..workers import LoadWorker, SaveWorker
@@ -233,6 +234,7 @@ class MainWindow(QMainWindow):
             self._refresh_profile_list()
             self.profileList.setCurrentRow(row)
             self._update_status()
+            announce(f"Profil {new_prof.name} uložen.")
 
     def on_duplicate(self) -> None:
         row = self.profileList.currentRow()
@@ -245,6 +247,7 @@ class MainWindow(QMainWindow):
         self._refresh_profile_list()
         self.profileList.setCurrentRow(len(self._config.profiles) - 1)
         self._update_status()
+        announce(f"Vytvořena kopie profilu {src.name}.")
 
     def on_create(self) -> None:
         # create from standard
@@ -260,6 +263,7 @@ class MainWindow(QMainWindow):
             self._refresh_profile_list()
             self.profileList.setCurrentRow(len(self._config.profiles) - 1)
             self._update_status()
+            announce(f"Vytvořen profil {new_prof.name}.")
 
     def on_rename(self) -> None:
         row = self.profileList.currentRow()
@@ -283,6 +287,7 @@ class MainWindow(QMainWindow):
             prof.name = name
             self._refresh_profile_list()
             self.profileList.setCurrentRow(row)
+            announce(f"Profil přejmenován na {name}.")
 
     def on_delete(self) -> None:
         row = self.profileList.currentRow()
@@ -301,6 +306,7 @@ class MainWindow(QMainWindow):
             self._config.activeProfileId = self._config.profiles[0].id if self._config.profiles else "standard"
         self._refresh_profile_list()
         self._update_status()
+        announce(f"Profil {prof.name} smazán.")
 
     def on_set_active(self) -> None:
         row = self.profileList.currentRow()
@@ -310,6 +316,7 @@ class MainWindow(QMainWindow):
         self._config.activeProfileId = pid
         self._refresh_profile_list()
         self._update_status()
+        announce(f"Aktivní profil {self._config.profiles[row].name}.")
 
     def _collect_global(self) -> None:
         self._config.globalSettings = self.globalWidget.collect()
@@ -333,6 +340,7 @@ class MainWindow(QMainWindow):
         self._current_file = None
         self._refresh_profile_list()
         self._update_status()
+        announce("Vytvořena nová konfigurace.")
 
     def on_open(self) -> None:
         path, _ = QFileDialog.getOpenFileName(self, "Otevřít konfiguraci", "", "JSON (*.json);;Všechny (*.*)")

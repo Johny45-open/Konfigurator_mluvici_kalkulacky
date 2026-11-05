@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QPushButton, QTableWidget, QTableWidgetItem,
     QMessageBox, QGroupBox, QSplitter, QInputDialog, QFileDialog
 )
+from ..announce import announce
 from ..models import StatisticsFile, StatisticsSet, StatisticsFolder, generate_stats_id
 from ..statistics_io import merge_statistics
 from .folder_editor import FolderEditorDialog
@@ -181,6 +182,7 @@ class SetsTabWidget(QWidget):
         if dlg.exec()==dlg.DialogCode.Accepted:
             f=dlg.result_folder()
             self.stats.folders.append(f); self.refresh()
+            announce(f"Přidána složka {f.name}.")
 
     def _edit_folder(self):
         f=self._selected_folder()
@@ -188,6 +190,7 @@ class SetsTabWidget(QWidget):
         dlg=FolderEditorDialog(f, self)
         if dlg.exec()==dlg.DialogCode.Accepted:
             self.refresh()
+            announce(f"Složka {f.name} uložena.")
 
     def _del_folder(self):
         f=self._selected_folder()
@@ -198,6 +201,7 @@ class SetsTabWidget(QWidget):
         for s in self.stats.sets:
             if s.folderId==f.id: s.folderId=None
         self.refresh()
+        announce(f"Složka {f.name} smazána.")
 
     # --- set ops ---
     def _add_set(self):
@@ -207,6 +211,7 @@ class SetsTabWidget(QWidget):
             ns=dlg.result_set()
             self.stats.sets.append(ns); self.stats.currentIndex=len(self.stats.sets)-1
             self.refresh()
+            announce(f"Přidána sada {ns.name}.")
 
     def _edit_set(self):
         s=self._selected_set()
@@ -214,6 +219,7 @@ class SetsTabWidget(QWidget):
         dlg=SetEditorDialog(s, self.stats.folders, self)
         if dlg.exec()==dlg.DialogCode.Accepted:
             self.refresh()
+            announce(f"Sada {s.name} uložena.")
 
     def _dup_set(self):
         s=self._selected_set()
@@ -223,6 +229,7 @@ class SetsTabWidget(QWidget):
         dup.id=generate_stats_id()
         dup.name=s.name+" (kopie)"
         self.stats.sets.append(dup); self.refresh()
+        announce(f"Vytvořena kopie sady {s.name}.")
 
     def _del_set(self):
         s=self._selected_set()
@@ -233,6 +240,7 @@ class SetsTabWidget(QWidget):
         if self.stats.currentIndex>=len(self.stats.sets):
             self.stats.currentIndex=max(0, len(self.stats.sets)-1)
         self.refresh()
+        announce(f"Sada {s.name} smazána.")
 
     # --- file ops ---
     def _open_stats_file(self):

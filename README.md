@@ -11,7 +11,7 @@ py -m konfigurator.app
 python -m konfigurator.app
 ```
 
-Požadavky: Python 3.13+, PyQt6 6.7+, jsonschema, packaging. Žádný Tkinter/wx/Kivy/web.
+Požadavky: Python 3.13+, PyQt6 6.7+, jsonschema, packaging, accessible-output2 (jen Windows, pro hlasový výstup). Žádný Tkinter/wx/Kivy/web.
 
 ## Vytvoření konfigurace
 
@@ -52,6 +52,7 @@ V kalkulačce **Více možností → Exportovat konfiguraci (kontrakt)** → sou
 - Všechny widgety mají `setAccessibleName`, správný `tabOrder`, GroupBoxy, standardní Qt widgety.
 - Dialog po otevření fokusuje první pole, po zavření vrací fokus na volající tlačítko.
 - Dlouhé operace (načtení/validace/uložení) běží v `QThread` (signály/sloty), UI nezamrzá.
+- Tiché akce bez dialogu (přejmenovat, smazat, duplikovat, nastavit aktivní profil, změny sad a složek) jsou navíc potvrzeny hlasem: když běží čtečka obrazovky, text předá jejímu vlastnímu výstupu, když ne, mluví systémový hlas Windows (knihovna `accessible-output2`, modul `konfigurator/announce.py`).
 - Ve Flutteru: `Semantics`, `liveRegion`, `header`, návrat fokusu po importu, `SnackBar` + `speak`.
 
 ## Testy

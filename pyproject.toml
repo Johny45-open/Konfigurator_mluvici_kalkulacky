@@ -8,6 +8,7 @@ dependencies = [
     "PyQt6>=6.7",
     "jsonschema>=4.23",
     "packaging>=24.0",
+    "accessible-output2>=0.17; sys_platform == 'win32'",
 ]
 
 [project.optional-dependencies]
