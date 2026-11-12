@@ -185,19 +185,31 @@ class MainWindow(QMainWindow):
         layout.addStretch()
 
     def _refresh_profile_list(self) -> None:
-        self.profileList.clear()
-        self.activeCombo.clear()
-        for p in self._config.profiles:
-            item = QListWidgetItem(f"{p.name}  ({p.id}){' [vestaveny]' if p.isBuiltIn else ''}")
-            item.setData(Qt.ItemDataRole.UserRole, p.id)
-            self.profileList.addItem(item)
-            self.activeCombo.addItem(f"{p.name} ({p.id})", p.id)
-        # select active
-        for i, p in enumerate(self._config.profiles):
-            if p.id == self._config.activeProfileId:
-                self.profileList.setCurrentRow(i)
-                self.activeCombo.setCurrentIndex(i)
-                break
+        """Obnoví seznam profilů a nastaví správný aktivní profil.
+
+        Během úpravy jsou signály combo boxu dočasně blokovány, aby se
+        zabránilo nechtěnému volání ``_on_active_changed`` při přidávání
+        položek. Po dokončení se původní stav blokování obnoví.
+        """
+        # blokování signálů během manipulace s combo boxem
+        was_blocked = self.activeCombo.blockSignals(True)
+        try:
+            self.profileList.clear()
+            self.activeCombo.clear()
+            for p in self._config.profiles:
+                item = QListWidgetItem(f"{p.name}  ({p.id}){' [vestaveny]' if p.isBuiltIn else ''}")
+                item.setData(Qt.ItemDataRole.UserRole, p.id)
+                self.profileList.addItem(item)
+                self.activeCombo.addItem(f"{p.name} ({p.id})", p.id)
+            # vybereme aktivní profil podle aktuálního nastavení
+            for i, p in enumerate(self._config.profiles):
+                if p.id == self._config.activeProfileId:
+                    self.profileList.setCurrentRow(i)
+                    self.activeCombo.setCurrentIndex(i)
+                    break
+        finally:
+            # obnovíme původní stav blokování (typicky False)
+            self.activeCombo.blockSignals(was_blocked)
         self._update_buttons()
 
     def _on_profile_selected(self, row: int) -> None:

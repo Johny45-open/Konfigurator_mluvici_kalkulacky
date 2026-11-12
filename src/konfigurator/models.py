@@ -20,7 +20,10 @@ DIALOG_SIZES = ("compact", "wide", "fullscreen")
 CALCULATOR_MODES = ("basic", "scientific", "statistics", "electrician", "unitConversion", "time", "currency")
 THEMES = ("light", "dark")
 STATS_SUMMARY_SECTIONS = ("header", "dataValues", "computed")
-STATS_COMPUTED_ITEMS = ("mean", "sum", "variance", "sd", "median", "min", "max", "mode", "cv", "wmean")
+# Plna sada znamych polumek (poradek jako StatsComputedItem v Flutteru).
+# Posledni tri (wvar, wsd, wcv) umi jen nove kalkulacky; starse poznaji
+# prvnich 10.
+STATS_COMPUTED_ITEMS = ("mean", "sum", "variance", "sd", "median", "min", "max", "mode", "cv", "wmean", "wvar", "wsd", "wcv")
 INVERSE_PREFS = ("dms", "decimal")
 
 # --- ceske zobrazeni vyse uvedenych hodnot (v UI; do souboru se pisi anglicke enumy) ---
@@ -51,8 +54,48 @@ COMPUTED_ITEM_LABELS = {
     "mode": "Módus",
     "cv": "Variac. koef.",
     "wmean": "Vážený průměr",
+    "wvar": "Vážený rozptyl",
+    "wsd": "Vážená směrodatná odchylka",
+    "wcv": "Vážený variační koeficient",
 }
 
+# Vychozi (bezpecny) poradí pre vsechny podporovane kalkulacky >=11.5.0.
+# Posledni tri polumky (wvar, wsd, wcv) se daji pridat explicitne pres
+# add_weighted_items() — vyžadují novější kalkulacku.
+DEFAULT_COMPUTED_ORDER = ("mean", "sum", "variance", "sd", "median", "min", "max", "mode", "cv", "wmean")
+WEIGHTED_EXTRA_ITEMS = ("wvar", "wsd", "wcv")
+
+
+def normalize_stats_computed_order(order: list) -> list:
+    """Udrzi userove poradí, zrusi duplicity a doplni chybějici v ramci
+    zakladnich 10 polumek. Novych 3 (wvar/wsd/wcv) se automaticky
+    nepridavaji — pouze se zachovaji, pokud soubor uz je ma."""
+    known = set(STATS_COMPUTED_ITEMS)
+    seen = set()
+    out = []
+    for item in order:
+        if item in known and item not in seen:
+            seen.add(item)
+            out.append(item)
+    for item in DEFAULT_COMPUTED_ORDER:
+        if item not in seen:
+            seen.add(item)
+            out.append(item)
+    return out
+
+
+def add_weighted_items(order: list) -> list:
+    """Prida wvar/wsd/wcv na konec (poradek Flutteru), pokud chybí."""
+    out = list(order)
+    for item in WEIGHTED_EXTRA_ITEMS:
+        if item not in out:
+            out.append(item)
+    return out
+
+
+def remove_weighted_items(order: list) -> list:
+    """Odbere wvar/wsd/wcv (vratí zakladnich 10)."""
+    return [x for x in order if x not in WEIGHTED_EXTRA_ITEMS]
 
 
 def generate_custom_id(name: str) -> str:
@@ -216,7 +259,7 @@ class GlobalSettings:
     isDegreeMode: bool = True
     defaultMode: str = "scientific"
     statsSummaryOrder: list = field(default_factory=lambda: ["header", "dataValues", "computed"])
-    statsComputedOrder: list = field(default_factory=lambda: ["mean", "sum", "variance", "sd", "median", "min", "max", "mode", "cv", "wmean"])
+    statsComputedOrder: list = field(default_factory=lambda: list(DEFAULT_COMPUTED_ORDER))
     currencyFrom: str = "CZK"
     currencyTo: str = "EUR"
     devEnabled: bool = False
@@ -254,7 +297,9 @@ class GlobalSettings:
             isDegreeMode=bool(d.get("isDegreeMode", True)),
             defaultMode=str(d.get("defaultMode", "scientific")),
             statsSummaryOrder=list(d.get("statsSummaryOrder", ["header", "dataValues", "computed"])),
-            statsComputedOrder=list(d.get("statsComputedOrder", ["mean", "sum", "variance", "sd", "median", "min", "max", "mode", "cv", "wmean"])),
+            statsComputedOrder=normalize_stats_computed_order(
+                d.get("statsComputedOrder", list(DEFAULT_COMPUTED_ORDER))
+            ),
             currencyFrom=str(cur.get("from", "CZK")),
             currencyTo=str(cur.get("to", "EUR")),
             devEnabled=bool(dev.get("enabled", False)),
