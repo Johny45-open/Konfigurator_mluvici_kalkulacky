@@ -12,6 +12,7 @@ import pytest
 
 # Import the MainWindow class
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from src.konfigurator.ui import main_window as main_window_module
 from src.konfigurator.ui.main_window import MainWindow
 
 @pytest.fixture(scope="module")
@@ -78,6 +79,7 @@ def test_user_changes_active_profile_via_combo(window):
     assert window.activeCombo.currentData() == new_id
 
 def test_set_active_button(window, monkeypatch):
+    monkeypatch.setattr(main_window_module, "announce", lambda _message: None)
     # Add a custom profile to select
     from src.konfigurator import models
     new_id = models.generate_custom_id("SetActiveTest")
@@ -97,3 +99,30 @@ def test_set_active_button(window, monkeypatch):
     # After refresh, activeCombo should still point to that id
     window._refresh_profile_list()
     assert window.activeCombo.currentData() == new_id
+
+
+def test_edit_profile_announces_saved_name_after_dialog_closes(window, monkeypatch, app):
+    announcements = []
+
+    class AcceptedEditor:
+        class DialogCode:
+            Accepted = 1
+
+        def __init__(self, profile, parent):
+            self.profile = profile
+
+        def exec(self):
+            return self.DialogCode.Accepted
+
+        def result_profile(self):
+            return self.profile
+
+    monkeypatch.setattr(main_window_module, "ProfileEditorDialog", AcceptedEditor)
+    monkeypatch.setattr(main_window_module, "announce", announcements.append)
+    window.profileList.setCurrentRow(2)
+
+    window.on_edit()
+    app.processEvents()
+
+    assert announcements == ["Profil Slabozraký uložen."]
+    assert "Profil Slabozraký uložen." in window.statusLabel.text()

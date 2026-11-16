@@ -4,7 +4,7 @@ from __future__ import annotations
 import copy
 import pathlib
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtWidgets import (
     QComboBox,
     QFileDialog,
@@ -246,7 +246,9 @@ class MainWindow(QMainWindow):
             self._refresh_profile_list()
             self.profileList.setCurrentRow(row)
             self._update_status()
-            announce(f"Profil {new_prof.name} uložen.")
+            message = f"Profil {new_prof.name} uložen."
+            self.statusLabel.setText(f"{message}  |  {self.statusLabel.text()}")
+            QTimer.singleShot(0, lambda: announce(message))
 
     def on_duplicate(self) -> None:
         row = self.profileList.currentRow()
