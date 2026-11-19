@@ -73,6 +73,11 @@ def _collect_unknown_keys(data: dict, result: ValidationResult) -> None:
             for k in cur.keys():
                 if k not in KNOWN_CURRENCY_KEYS:
                     result.warnings.append(ValidationIssue(path=f"globalSettings.currency.{k}", message=f"Neznamy klic '{k}' v currency.", code="unknownKey"))
+        voice = gs.get("ttsVoice")
+        if isinstance(voice, dict):
+            for k in voice.keys():
+                if k not in {"name", "locale"}:
+                    result.warnings.append(ValidationIssue(path=f"globalSettings.ttsVoice.{k}", message=f"Neznamy klic '{k}' v ttsVoice.", code="unknownKey"))
         dev = gs.get("devMode")
         if isinstance(dev, dict):
             for k in dev.keys():
@@ -94,15 +99,15 @@ def validate_contract(data: Any) -> ValidationResult:
     if not isinstance(sv, int):
         result.errors.append(ValidationIssue(path="schemaVersion", message="schemaVersion musí být integer.", code="type"))
         return result
-    if sv != 1:
-        if sv > 1:
-            result.errors.append(ValidationIssue(path="schemaVersion", message=f"Nepodporovaná budoucí verze schemaVersion={sv} (podporovaná je 1). Aktualizujte kalkulačku.", code="futureVersion"))
+    if sv not in (1, 3):
+        if sv > 3:
+            result.errors.append(ValidationIssue(path="schemaVersion", message=f"Nepodporovaná budoucí verze schemaVersion={sv} (podporované jsou 1 a 3). Aktualizujte konfigurátor.", code="futureVersion"))
         else:
-            result.errors.append(ValidationIssue(path="schemaVersion", message=f"Nepodporovaná stará verze schemaVersion={sv} (podporovaná je 1).", code="unsupportedVersion"))
+            result.errors.append(ValidationIssue(path="schemaVersion", message=f"Nepodporovaná verze schemaVersion={sv} (podporované jsou 1 a 3).", code="unsupportedVersion"))
         return result
 
     # --- vrstva A: JSON Schema ---
-    schema = load_schema()
+    schema = load_schema(sv)
     validator = jsonschema.Draft202012Validator(schema)
     for err in sorted(validator.iter_errors(data), key=lambda e: list(e.path)):
         path = ".".join(str(p) for p in err.path) if err.path else ""
@@ -123,6 +128,25 @@ def validate_contract(data: Any) -> ValidationResult:
         for i, p in enumerate(profiles):
             if not isinstance(p, dict):
                 continue
+            settings = p.get("settings")
+            if sv >= 3 and isinstance(settings, dict):
+                for key in (
+                    "screenReaderMode",
+                    "ttsEnabled",
+                    "speechRate",
+                    "speechVolume",
+                    "ttsEngine",
+                    "ttsVoice",
+                    "ttsVoiceName",
+                    "resultDisplayMode",
+                    "announceFractionAvailability",
+                ):
+                    if key in settings:
+                        result.errors.append(ValidationIssue(
+                            path=f"profiles[{i}].settings.{key}",
+                            message=f"{key} je v kontraktu v3 globální nastavení.",
+                            code="profileGlobalSetting",
+                        ))
             is_builtin = p.get("isBuiltIn")
             pid = p.get("id")
             if is_builtin is True and pid not in ("standard", "blind", "lowvision"):

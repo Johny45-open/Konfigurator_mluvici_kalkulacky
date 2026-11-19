@@ -29,3 +29,18 @@ def test_schema_is_valid_json_schema():
     data = json.loads(PYTHON_SCHEMA.read_text(encoding="utf-8"))
     assert data["$schema"] == "https://json-schema.org/draft/2020-12/schema"
     assert data["properties"]["schemaVersion"]["const"] == 1
+
+
+def test_v3_schema_is_valid_and_places_voice_settings_globally():
+    import json
+
+    schema_path = PYTHON_SCHEMA.with_name("config_schema_v3.json")
+    data = json.loads(schema_path.read_text(encoding="utf-8"))
+    assert data["properties"]["schemaVersion"]["const"] == 3
+    profile_settings = data["$defs"]["accessibilitySettings"]["properties"]
+    global_settings = data["$defs"]["globalSettings"]["properties"]
+    assert "screenReaderMode" not in profile_settings
+    assert "speechRate" not in profile_settings
+    assert "themeMode" in global_settings
+    assert "screenReaderMode" in global_settings
+    assert "speechRate" in global_settings

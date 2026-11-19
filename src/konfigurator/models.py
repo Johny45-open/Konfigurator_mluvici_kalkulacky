@@ -1,4 +1,4 @@
-"""Datove modely odpovidajici config_schema_v1.json a internim enumum kalkulacky."""
+"""Datové modely přenositelného kontraktu kalkulačky."""
 from __future__ import annotations
 
 import copy
@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 APP_VERSION = "11.5.0"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 3
 
 # --- enums jako stringy (verejny kontrakt) ---
 ACCESSIBILITY_TYPES = ("none", "blind", "visuallyImpaired")
@@ -20,10 +20,14 @@ DIALOG_SIZES = ("compact", "wide", "fullscreen")
 CALCULATOR_MODES = ("basic", "scientific", "statistics", "electrician", "unitConversion", "time", "currency")
 THEMES = ("light", "dark")
 STATS_SUMMARY_SECTIONS = ("header", "dataValues", "computed")
-# Plna sada znamych polumek (poradek jako StatsComputedItem v Flutteru).
-# Posledni tri (wvar, wsd, wcv) umi jen nove kalkulacky; starse poznaji
-# prvnich 10.
-STATS_COMPUTED_ITEMS = ("mean", "sum", "variance", "sd", "median", "min", "max", "mode", "cv", "wmean", "wvar", "wsd", "wcv")
+# Complete current StatsComputedItem list from the calculator.
+STATS_COMPUTED_ITEMS = (
+    "mean", "sum", "variance", "sd", "median", "min", "max", "mode", "cv",
+    "wmean", "wvar", "wsd", "wcv", "sampleVariance", "sampleSd", "range",
+    "q1", "q3", "iqr", "meanAbsoluteDeviation", "geometricMean",
+    "harmonicMean", "populationSkewness", "sampleSkewness",
+    "populationExcessKurtosis", "sampleExcessKurtosis",
+)
 INVERSE_PREFS = ("dms", "decimal")
 
 # --- ceske zobrazeni vyse uvedenych hodnot (v UI; do souboru se pisi anglicke enumy) ---
@@ -38,6 +42,8 @@ CALCULATOR_MODE_LABELS = {
     "currency": "Měny",
 }
 SCREEN_READER_LABELS = {"auto": "Automaticky", "on": "Zapnuto", "off": "Vypnuto"}
+RESULT_DISPLAY_MODES = ("segment", "text", "auto")
+RESULT_DISPLAY_MODE_LABELS = {"segment": "Segmentový", "text": "Matematický text", "auto": "Automaticky"}
 ACCESSIBILITY_TYPE_LABELS = {"none": "Žádný", "blind": "Nevidomý", "visuallyImpaired": "Slabozraký"}
 THOUSAND_GAP_LABELS = {"small": "Malá", "medium": "Střední", "large": "Velká"}
 DIALOG_SIZE_LABELS = {"compact": "Kompaktní", "wide": "Široký", "fullscreen": "Na celou obrazovku"}
@@ -57,19 +63,31 @@ COMPUTED_ITEM_LABELS = {
     "wvar": "Vážený rozptyl",
     "wsd": "Vážená směrodatná odchylka",
     "wcv": "Vážený variační koeficient",
+    "sampleVariance": "Výběrový rozptyl",
+    "sampleSd": "Výběrová sm. odchylka",
+    "range": "Rozpětí",
+    "q1": "První kvartil",
+    "q3": "Třetí kvartil",
+    "iqr": "Mezikvartilové rozpětí",
+    "meanAbsoluteDeviation": "Průměrná absolutní odchylka",
+    "geometricMean": "Geometrický průměr",
+    "harmonicMean": "Harmonický průměr",
+    "populationSkewness": "Šikmost populace",
+    "sampleSkewness": "Výběrová šikmost",
+    "populationExcessKurtosis": "Špičatost populace",
+    "sampleExcessKurtosis": "Výběrová špičatost",
 }
 
-# Vychozi (bezpecny) poradí pre vsechny podporovane kalkulacky >=11.5.0.
-# Posledni tri polumky (wvar, wsd, wcv) se daji pridat explicitne pres
-# add_weighted_items() — vyžadují novější kalkulacku.
+# The default remains the legacy ten-item order; additional current items are
+# preserved when present in a v3 contract.
 DEFAULT_COMPUTED_ORDER = ("mean", "sum", "variance", "sd", "median", "min", "max", "mode", "cv", "wmean")
 WEIGHTED_EXTRA_ITEMS = ("wvar", "wsd", "wcv")
 
 
 def normalize_stats_computed_order(order: list) -> list:
     """Udrzi userove poradí, zrusi duplicity a doplni chybějici v ramci
-    zakladnich 10 polumek. Novych 3 (wvar/wsd/wcv) se automaticky
-    nepridavaji — pouze se zachovaji, pokud soubor uz je ma."""
+    zakladnich 10 polozek. Ostatni podporovane polozky se zachovaji, pokud
+    soubor uz je ma."""
     known = set(STATS_COMPUTED_ITEMS)
     seen = set()
     out = []
@@ -121,7 +139,6 @@ class TtsVoice:
 @dataclass
 class AccessibilitySettings:
     accessibilityType: str = "none"
-    screenReaderMode: str = "auto"
     fontSizeMultiplier: float = 1.0
     dialogFontScale: float = 1.0
     dotMatrixZoom: float = 1.0
@@ -137,12 +154,6 @@ class AccessibilitySettings:
     alignInputLeft: bool = True
     overlineThickness: float = 1.0
     overlineHeight: float = 1.0
-    speechRate: float = 0.5
-    speechVolume: float = 1.0
-    ttsEnabled: bool = True
-    ttsEngine: Optional[str] = None
-    ttsVoice: Optional[TtsVoice] = None
-    ttsVoiceName: Optional[str] = None
     inverseFormatPreference: Optional[str] = None  # dms/decimal/null
 
     @classmethod
@@ -169,7 +180,6 @@ class AccessibilitySettings:
     def to_dict(self) -> dict:
         d: dict = {
             "accessibilityType": self.accessibilityType,
-            "screenReaderMode": self.screenReaderMode,
             "fontSizeMultiplier": self.fontSizeMultiplier,
             "dialogFontScale": self.dialogFontScale,
             "dotMatrixZoom": self.dotMatrixZoom,
@@ -185,24 +195,14 @@ class AccessibilitySettings:
             "alignInputLeft": self.alignInputLeft,
             "overlineThickness": self.overlineThickness,
             "overlineHeight": self.overlineHeight,
-            "speechRate": self.speechRate,
-            "speechVolume": self.speechVolume,
-            "ttsEnabled": self.ttsEnabled,
-            "ttsEngine": self.ttsEngine,
-            "ttsVoice": self.ttsVoice.to_dict() if self.ttsVoice else None,
-            "ttsVoiceName": self.ttsVoiceName,
             "inverseFormatPreference": self.inverseFormatPreference,
         }
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "AccessibilitySettings":
-        voice = None
-        if d.get("ttsVoice") is not None:
-            voice = TtsVoice.from_dict(d["ttsVoice"])
         return cls(
             accessibilityType=str(d.get("accessibilityType", "none")),
-            screenReaderMode=str(d.get("screenReaderMode", "auto")),
             fontSizeMultiplier=float(d.get("fontSizeMultiplier", 1.0)),
             dialogFontScale=float(d.get("dialogFontScale", 1.0)),
             dotMatrixZoom=float(d.get("dotMatrixZoom", 1.0)),
@@ -218,12 +218,6 @@ class AccessibilitySettings:
             alignInputLeft=bool(d.get("alignInputLeft", True)),
             overlineThickness=float(d.get("overlineThickness", 1.0)),
             overlineHeight=float(d.get("overlineHeight", 1.0)),
-            speechRate=float(d.get("speechRate", 0.5)),
-            speechVolume=float(d.get("speechVolume", 1.0)),
-            ttsEnabled=bool(d.get("ttsEnabled", True)),
-            ttsEngine=d.get("ttsEngine"),
-            ttsVoice=voice,
-            ttsVoiceName=d.get("ttsVoiceName"),
             inverseFormatPreference=d.get("inverseFormatPreference"),
         )
 
@@ -256,6 +250,18 @@ class AccessibilityProfile:
 @dataclass
 class GlobalSettings:
     themeMode: str = "dark"
+    screenReaderMode: str = "auto"
+    ttsEnabled: bool = True
+    speechRate: float = 0.5
+    speechVolume: float = 1.0
+    ttsEngine: Optional[str] = None
+    ttsVoice: Optional[TtsVoice] = None
+    ttsVoiceName: Optional[str] = None
+    resultDisplayMode: str = "segment"
+    announceFractionAvailability: bool = True
+    resultNotationPreference: str = "decimal"
+    historyExactFormat: str = "numeric"
+    statsDisplayConfig: Optional[dict] = None
     isDegreeMode: bool = True
     defaultMode: str = "scientific"
     statsSummaryOrder: list = field(default_factory=lambda: ["header", "dataValues", "computed"])
@@ -270,6 +276,17 @@ class GlobalSettings:
     def to_dict(self) -> dict:
         d: dict = {
             "themeMode": self.themeMode,
+            "screenReaderMode": self.screenReaderMode,
+            "ttsEnabled": self.ttsEnabled,
+            "speechRate": self.speechRate,
+            "speechVolume": self.speechVolume,
+            "ttsEngine": self.ttsEngine,
+            "ttsVoice": self.ttsVoice.to_dict() if self.ttsVoice else None,
+            "ttsVoiceName": self.ttsVoiceName,
+            "resultDisplayMode": self.resultDisplayMode,
+            "announceFractionAvailability": self.announceFractionAvailability,
+            "resultNotationPreference": self.resultNotationPreference,
+            "historyExactFormat": self.historyExactFormat,
             "isDegreeMode": self.isDegreeMode,
             "defaultMode": self.defaultMode,
             "statsSummaryOrder": list(self.statsSummaryOrder),
@@ -286,14 +303,29 @@ class GlobalSettings:
         else:
             # nullable in schema, explicit null for round-trip clarity optional
             pass
+        if self.statsDisplayConfig is not None:
+            d["statsDisplayConfig"] = copy.deepcopy(self.statsDisplayConfig)
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "GlobalSettings":
         cur = d.get("currency", {})
         dev = d.get("devMode", {})
+        voice_data = d.get("ttsVoice")
         return cls(
             themeMode=str(d.get("themeMode", "dark")),
+            screenReaderMode=str(d.get("screenReaderMode", "auto")),
+            ttsEnabled=bool(d.get("ttsEnabled", True)),
+            speechRate=float(d.get("speechRate", 0.5)),
+            speechVolume=float(d.get("speechVolume", 1.0)),
+            ttsEngine=d.get("ttsEngine"),
+            ttsVoice=TtsVoice.from_dict(voice_data) if isinstance(voice_data, dict) else None,
+            ttsVoiceName=d.get("ttsVoiceName"),
+            resultDisplayMode=str(d.get("resultDisplayMode", "segment")),
+            announceFractionAvailability=bool(d.get("announceFractionAvailability", True)),
+            resultNotationPreference=str(d.get("resultNotationPreference", "decimal")),
+            historyExactFormat=str(d.get("historyExactFormat", "numeric")),
+            statsDisplayConfig=copy.deepcopy(d.get("statsDisplayConfig")),
             isDegreeMode=bool(d.get("isDegreeMode", True)),
             defaultMode=str(d.get("defaultMode", "scientific")),
             statsSummaryOrder=list(d.get("statsSummaryOrder", ["header", "dataValues", "computed"])),
@@ -346,15 +378,37 @@ class ConfigFile:
     def from_dict(cls, d: dict) -> "ConfigFile":
         comp = d.get("calculatorCompatibility", {})
         profiles = [AccessibilityProfile.from_dict(p) for p in d.get("profiles", [])]
+        global_data = dict(d.get("globalSettings", {}))
+        if int(d.get("schemaVersion", 1)) < 3:
+            active_profile = next(
+                (p for p in d.get("profiles", []) if p.get("id") == d.get("activeProfileId")),
+                None,
+            )
+            if active_profile is not None:
+                legacy_settings = active_profile.get("settings", {})
+                for key in (
+                    "screenReaderMode",
+                    "ttsEnabled",
+                    "speechRate",
+                    "speechVolume",
+                    "ttsEngine",
+                    "ttsVoice",
+                    "ttsVoiceName",
+                ):
+                    if key not in global_data and key in legacy_settings:
+                        global_data[key] = legacy_settings[key]
+        global_settings = GlobalSettings.from_dict(global_data)
+        if int(d.get("schemaVersion", 1)) >= 3 and isinstance(global_data.get("statsComputedOrder"), list):
+            global_settings.statsComputedOrder = list(global_data["statsComputedOrder"])
         return cls(
-            schemaVersion=int(d.get("schemaVersion", 1)),
+            schemaVersion=SCHEMA_VERSION,
             createdAt=d.get("createdAt"),
             generator=d.get("generator"),
             minVersion=str(comp.get("minVersion", APP_VERSION)),
             maxVersion=comp.get("maxVersion"),
             activeProfileId=str(d.get("activeProfileId", "standard")),
             profiles=profiles,
-            globalSettings=GlobalSettings.from_dict(d.get("globalSettings", {})),
+            globalSettings=global_settings,
         )
 
     def canonical(self) -> dict:

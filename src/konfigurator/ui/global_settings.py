@@ -3,6 +3,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QDoubleSpinBox,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -26,6 +27,11 @@ from ..models import (
     SUMMARY_SECTION_LABELS,
     THEMES,
     THEME_LABELS,
+    RESULT_DISPLAY_MODES,
+    RESULT_DISPLAY_MODE_LABELS,
+    SCREEN_READER_MODES,
+    SCREEN_READER_LABELS,
+    TtsVoice,
 )
 
 
@@ -66,6 +72,52 @@ class GlobalSettingsWidget(QWidget):
         f.addRow(self.degreeCheck)
         f.addRow("Výchozí režim:", self.defaultModeCombo)
         layout.addWidget(themeBox)
+
+        speechBox = QGroupBox("Čtečka a hlasový výstup")
+        speechBox.setAccessibleName("Skupina čtečka a hlasový výstup")
+        sf = QFormLayout(speechBox)
+        self.screenReaderCombo = QComboBox()
+        self.screenReaderCombo.setAccessibleName("Režim čtečky obrazovky")
+        for value in SCREEN_READER_MODES:
+            self.screenReaderCombo.addItem(SCREEN_READER_LABELS[value], value)
+        self.ttsEnabledCheck = QCheckBox("Povolit hlasový výstup")
+        self.ttsEnabledCheck.setAccessibleName("Povolit hlasový výstup")
+        self.speechRateSpin = QDoubleSpinBox()
+        self.speechRateSpin.setAccessibleName("Rychlost řeči")
+        self.speechRateSpin.setRange(0.1, 1.0)
+        self.speechRateSpin.setSingleStep(0.1)
+        self.speechRateSpin.setDecimals(2)
+        self.speechVolumeSpin = QDoubleSpinBox()
+        self.speechVolumeSpin.setAccessibleName("Hlasitost řeči")
+        self.speechVolumeSpin.setRange(0.0, 1.0)
+        self.speechVolumeSpin.setSingleStep(0.1)
+        self.speechVolumeSpin.setDecimals(2)
+        self.ttsEngineEdit = QLineEdit()
+        self.ttsEngineEdit.setAccessibleName("TTS engine")
+        self.ttsEngineEdit.setPlaceholderText("Výchozí (prázdné)")
+        self.ttsVoiceNameEdit = QLineEdit()
+        self.ttsVoiceNameEdit.setAccessibleName("Název hlasu")
+        self.ttsVoiceNameEdit.setPlaceholderText("Výchozí")
+        self.ttsVoiceLocaleCombo = QComboBox()
+        self.ttsVoiceLocaleCombo.setAccessibleName("Jazyk hlasu")
+        self.ttsVoiceLocaleCombo.addItems(["", "cs-CZ", "en-US"])
+        self.ttsVoiceLocaleCombo.setEditable(True)
+        self.resultDisplayModeCombo = QComboBox()
+        self.resultDisplayModeCombo.setAccessibleName("Způsob zobrazení výsledku")
+        for value in RESULT_DISPLAY_MODES:
+            self.resultDisplayModeCombo.addItem(RESULT_DISPLAY_MODE_LABELS[value], value)
+        self.announceFractionCheck = QCheckBox("Oznamovat dostupný zlomek")
+        self.announceFractionCheck.setAccessibleName("Oznamovat dostupný zlomek")
+        sf.addRow("Režim čtečky:", self.screenReaderCombo)
+        sf.addRow(self.ttsEnabledCheck)
+        sf.addRow("Rychlost (0.1-1.0):", self.speechRateSpin)
+        sf.addRow("Hlasitost (0.0-1.0):", self.speechVolumeSpin)
+        sf.addRow("Engine:", self.ttsEngineEdit)
+        sf.addRow("Hlas - jméno:", self.ttsVoiceNameEdit)
+        sf.addRow("Hlas - locale:", self.ttsVoiceLocaleCombo)
+        sf.addRow("Zobrazení výsledku:", self.resultDisplayModeCombo)
+        sf.addRow(self.announceFractionCheck)
+        layout.addWidget(speechBox)
 
         # Statistické pořadí — zobrazení jako list s šipkami
         statsBox = QGroupBox("Statistika — pořadí")
@@ -166,6 +218,15 @@ class GlobalSettingsWidget(QWidget):
         _set_combo_by_data(self.themeCombo, gs.themeMode)
         self.degreeCheck.setChecked(gs.isDegreeMode)
         _set_combo_by_data(self.defaultModeCombo, gs.defaultMode)
+        _set_combo_by_data(self.screenReaderCombo, gs.screenReaderMode)
+        self.ttsEnabledCheck.setChecked(gs.ttsEnabled)
+        self.speechRateSpin.setValue(gs.speechRate)
+        self.speechVolumeSpin.setValue(gs.speechVolume)
+        self.ttsEngineEdit.setText(gs.ttsEngine or "")
+        self.ttsVoiceNameEdit.setText(gs.ttsVoice.name if gs.ttsVoice else (gs.ttsVoiceName or ""))
+        self.ttsVoiceLocaleCombo.setCurrentText(gs.ttsVoice.locale if gs.ttsVoice else "")
+        _set_combo_by_data(self.resultDisplayModeCombo, gs.resultDisplayMode)
+        self.announceFractionCheck.setChecked(gs.announceFractionAvailability)
         self.summaryList.clear()
         for s in gs.statsSummaryOrder:
             it = QListWidgetItem(SUMMARY_SECTION_LABELS.get(s, s))
@@ -190,8 +251,24 @@ class GlobalSettingsWidget(QWidget):
         # validate pin 4 digits if present
         if pin is not None and pin != "" and (len(pin) != 4 or not pin.isdigit()):
             pin = None
+        voice_name = self.ttsVoiceNameEdit.text().strip()
+        voice_locale = self.ttsVoiceLocaleCombo.currentText().strip()
+        voice = TtsVoice(name=voice_name, locale=voice_locale) if voice_name and voice_locale else None
+        tts_engine = self.ttsEngineEdit.text().strip() or None
         return GlobalSettings(
             themeMode=self.themeCombo.currentData(),
+            screenReaderMode=self.screenReaderCombo.currentData(),
+            ttsEnabled=self.ttsEnabledCheck.isChecked(),
+            speechRate=float(self.speechRateSpin.value()),
+            speechVolume=float(self.speechVolumeSpin.value()),
+            ttsEngine=tts_engine,
+            ttsVoice=voice,
+            ttsVoiceName=voice_name or None,
+            resultDisplayMode=self.resultDisplayModeCombo.currentData(),
+            announceFractionAvailability=self.announceFractionCheck.isChecked(),
+            resultNotationPreference=self._gs.resultNotationPreference,
+            historyExactFormat=self._gs.historyExactFormat,
+            statsDisplayConfig=self._gs.statsDisplayConfig,
             isDegreeMode=self.degreeCheck.isChecked(),
             defaultMode=self.defaultModeCombo.currentData(),
             statsSummaryOrder=summary if summary else list(STATS_SUMMARY_SECTIONS),

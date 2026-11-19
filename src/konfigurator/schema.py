@@ -1,27 +1,26 @@
-"""Loader pro kanonicky config_schema_v1.json."""
+"""Loader schémat přenositelného konfiguračního kontraktu."""
 from __future__ import annotations
 
 import json
 import pathlib
 
-_SCHEMA_PATH = pathlib.Path(__file__).parent / "assets" / "config_schema_v1.json"
+_SCHEMA_DIR = pathlib.Path(__file__).parent / "assets"
 
-_cached = None
-
-
-def load_schema() -> dict:
-    global _cached
-    if _cached is not None:
-        return _cached
-    with open(_SCHEMA_PATH, "r", encoding="utf-8") as f:
-        _cached = json.load(f)
-    return _cached
+_cached: dict[int, dict] = {}
 
 
-def schema_hash() -> str:
+def load_schema(version: int = 3) -> dict:
+    if version not in _cached:
+        schema_path = _SCHEMA_DIR / f"config_schema_v{version}.json"
+        with open(schema_path, "r", encoding="utf-8") as f:
+            _cached[version] = json.load(f)
+    return _cached[version]
+
+
+def schema_hash(version: int = 3) -> str:
     import hashlib
 
-    data = _SCHEMA_PATH.read_bytes()
+    data = (_SCHEMA_DIR / f"config_schema_v{version}.json").read_bytes()
     return hashlib.sha256(data).hexdigest()
 
 # Known keys allowlisty odvozene ze schematu (ne ručně duplikovane)
@@ -37,6 +36,12 @@ KNOWN_SETTINGS_KEYS = {
     "speechRate", "speechVolume", "ttsEnabled", "ttsEngine", "ttsVoice", "ttsVoiceName",
     "inverseFormatPreference",
 }
-KNOWN_GLOBAL_KEYS = {"themeMode", "isDegreeMode", "defaultMode", "statsSummaryOrder", "statsComputedOrder", "currency", "devMode"}
+KNOWN_GLOBAL_KEYS = {
+    "themeMode", "screenReaderMode", "ttsEnabled", "speechRate", "speechVolume",
+    "ttsEngine", "ttsVoice", "ttsVoiceName", "resultDisplayMode",
+    "announceFractionAvailability", "resultNotationPreference",
+    "historyExactFormat", "statsDisplayConfig", "isDegreeMode", "defaultMode",
+    "statsSummaryOrder", "statsComputedOrder", "currency", "devMode",
+}
 KNOWN_CURRENCY_KEYS = {"from", "to"}
 KNOWN_DEVMODE_KEYS = {"enabled", "autoDiagnostic", "diagnosticDurationMs", "pinCode"}

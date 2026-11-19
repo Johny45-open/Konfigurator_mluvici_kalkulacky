@@ -23,7 +23,7 @@ def test_config_canonical():
     c = cfg.canonical()
     assert "createdAt" not in c
     assert "generator" not in c
-    assert c["schemaVersion"] == 1
+    assert c["schemaVersion"] == 3
 
 def test_inverse_pref_mapping():
     assert models.AccessibilitySettings(inverseFormatPreference="dms").inverseFormatPreference == "dms"

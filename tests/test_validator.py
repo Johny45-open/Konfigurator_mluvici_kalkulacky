@@ -36,10 +36,18 @@ def test_invalid_json_type():
 
 def test_unknown_schemaVersion_future():
     data = load_valid()
-    data["schemaVersion"] = 2
+    data["schemaVersion"] = 4
     vr = validate_contract(data)
     assert not vr.ok
     assert any(e.code == "futureVersion" for e in vr.errors)
+
+
+def test_schema_version_two_is_unsupported():
+    data = load_valid()
+    data["schemaVersion"] = 2
+    vr = validate_contract(data)
+    assert not vr.ok
+    assert any(e.code == "unsupportedVersion" for e in vr.errors)
 
 
 def test_old_schemaVersion():
@@ -158,3 +166,21 @@ def test_compatible_minVersion_format():
     data["calculatorCompatibility"]["minVersion"] = "bad"
     vr = validate_contract(data)
     assert not vr.ok
+
+
+def test_v3_moves_voice_and_screen_reader_to_globals():
+    from konfigurator.models import ConfigFile
+
+    data = load_valid()
+    migrated = ConfigFile.from_dict(data).to_dict(include_metadata=False)
+    assert migrated["schemaVersion"] == 3
+    assert migrated["globalSettings"]["screenReaderMode"] == "auto"
+    assert migrated["globalSettings"]["speechRate"] == 0.5
+    assert migrated["globalSettings"]["themeMode"] == "dark"
+    assert "screenReaderMode" not in migrated["profiles"][0]["settings"]
+    assert validate_contract(migrated).ok
+
+    migrated["profiles"][0]["settings"]["speechRate"] = 0.6
+    vr = validate_contract(migrated)
+    assert not vr.ok
+    assert any(e.code == "profileGlobalSetting" for e in vr.errors)

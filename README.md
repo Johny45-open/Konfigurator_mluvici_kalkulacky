@@ -1,6 +1,6 @@
 # Konfigurátor mluvící kalkulačky
 
-Desktopová aplikace pro Windows (Python 3.13+ + PyQt6) pro pohodlné nastavení všech konfigurovatelných parametrů **Mluvící kalkulačky** na PC a export do přenositelného souboru `mluvici_kalkulacka_config_v1.json`, který lze importovat přímo ve Flutter aplikaci.
+Desktopová aplikace pro Windows (Python 3.13+ + PyQt6) pro pohodlné nastavení všech konfigurovatelných parametrů **Mluvící kalkulačky** na PC a export do přenositelného souboru `mluvici_kalkulacka_config_v3.json`, který lze importovat přímo ve Flutter aplikaci. Starší kontrakt v1 lze otevřít a při uložení se převede na v3.
 
 ## Spuštění
 
@@ -17,10 +17,10 @@ Požadavky: Python 3.13+, PyQt6 6.7+, jsonschema, packaging, accessible-output2 
 
 1. Spusťte konfigurátor.
 2. Záložka **Profily**: upravte existující (standard/blind/lowvision), duplikujte, vytvářejte nové, přejmenujte, smažte (vestavěné nelze smazat), nastavte aktivní profil.
-3. Editor profilu (GroupBoxy): Zobrazení, Oznamování/čtečka, TTS — vše SpinBox/ComboBox/CheckBox, bez sliderů, plně ovladatelné klávesnicí.
-4. Záložka **Globální**: téma, výchozí režim, pořadí statistiky (přesun šipkami), měna, vývojářský režim.
-5. **Zkontrolovat** — validace proti `assets/config_schema_v1.json` (vrstva A JSON + vrstva B unknown-key warnings).
-6. **Uložit jako…** → `mluvici_kalkulacka_config_v1.json`.
+3. Editor profilu (GroupBoxy): nastavení zobrazení a oznamování konkrétního profilu. Čtečka obrazovky, hlasový výstup a motiv aplikace jsou v **Globálním nastavení** stejně jako v aktuální kalkulačce.
+4. Záložka **Globální**: téma, režim čtečky, hlasový výstup, výchozí režim, pořadí statistiky (přesun šipkami), měna, vývojářský režim.
+5. **Zkontrolovat** — validace proti schématu v3 (vrstva A JSON + vrstva B unknown-key warnings); při otevření se stále validují i soubory v1.
+6. **Uložit jako…** → `mluvici_kalkulacka_config_v3.json`.
 
 ## Přenos do telefonu
 
@@ -34,15 +34,15 @@ V kalkulačce **Více možností → Exportovat konfiguraci (kontrakt)** → sou
 
 ## Verze schématu
 
-- `schemaVersion = 1` (MVP). `==1` podporováno, `>1` odmítnuto jako budoucí, `<1` odmítnuto jako staré.
+- `schemaVersion = 3` při exportu. Konfigurátor načítá v1 a v3; v1 se migruje do v3, v2 a budoucí verze se odmítají.
 - `calculatorCompatibility.minVersion` — konfigurátor zapisuje `11.5.0`, kalkulačka varuje při nekompatibilitě.
 - `createdAt`/`generator` jsou dynamická metadata, ignorují se při `canonicalize()` porovnání (round-trip test).
 - Neznámá pole → warning + ignorování (forward-compat), známá pole striktně validována.
 
 ## Přidání nového nastavení
 
-1. Rozšiřte `assets/config_schema_v1.json` (přidejte property, enum, range).
-2. Aktualizujte `src/konfigurator/models.py` a `lib/config_contract.dart` + `lib/config_validator.dart` (allowlisty odvozené ze schématu).
+1. Rozšiřte `assets/config_schema_v3.json` (přidejte property, enum, range).
+2. Aktualizujte `src/konfigurator/models.py` a odpovídající kontrakt/validátor kalkulačky.
 3. Aktualizujte `GlobalSettingsWidget` / `ProfileEditorDialog`.
 4. Zkopírujte schéma do obou repozitářů a ověřte hash (`pytest tests/test_schema_parity.py`, `flutter test test/schema_parity_test.dart`).
 

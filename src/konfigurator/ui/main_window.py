@@ -170,7 +170,7 @@ class MainWindow(QMainWindow):
         info = QLabel(
             "Konfigurátor vytváří přenositelný JSON soubor s konfigurací mluvící kalkulačky.\n"
             "Soubor uložte a přeneste do telefonu (USB, e-mail, cloud) a importujte v kalkulačce: Nastavení → Zálohování → Import kontraktu.\n"
-            "Schéma verze 1, kompatibilita minVersion 11.5.0.\n"
+            "Schéma verze 3, kompatibilita minVersion 11.5.0. Starší soubory v1 se při otevření převedou.\n"
             "Vestavěné profily standard/blind/lowvision nelze smazat, lze je resetovat na výchozí.\n"
             "Změna jednoho profilu neovlivní jiný profil (izolace).\n"
             "Všechny ovládací prvky jsou ovladatelné klávesnicí: Tab, Shift+Tab, Enter, Space, Esc, šipky."
@@ -394,7 +394,7 @@ class MainWindow(QMainWindow):
             self.on_save_as()
 
     def on_save_as(self) -> None:
-        path, _ = QFileDialog.getSaveFileName(self, "Uložit konfiguraci", "mluvici_kalkulacka_config_v1.json", "JSON (*.json)")
+        path, _ = QFileDialog.getSaveFileName(self, "Uložit konfiguraci", "mluvici_kalkulacka_config_v3.json", "JSON (*.json)")
         if not path:
             return
         self._do_save(path)

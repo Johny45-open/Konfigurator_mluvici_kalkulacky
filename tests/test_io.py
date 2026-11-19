@@ -12,9 +12,29 @@ FIXTURE = pathlib.Path(__file__).parent / "fixtures" / "valid_v1.json"
 def test_load_valid():
     cfg, vr = load_config(FIXTURE)
     assert vr.ok
-    assert cfg.schemaVersion == 1
+    assert cfg.schemaVersion == 3
     assert len(cfg.profiles) == 2
     assert cfg.activeProfileId == "standard"
+    assert cfg.globalSettings.screenReaderMode == "auto"
+    assert cfg.globalSettings.ttsEnabled is True
+    assert cfg.profiles[0].settings.to_dict().get("speechRate") is None
+
+
+def test_v1_migration_uses_the_active_profiles_voice_settings():
+    raw = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    raw["activeProfileId"] = "blind"
+    raw["profiles"][0]["settings"]["speechRate"] = 0.2
+    raw["profiles"][1]["settings"].update({
+        "screenReaderMode": "off",
+        "speechRate": 0.75,
+        "ttsEnabled": False,
+    })
+
+    assert validate_contract(raw).ok
+    cfg = models.ConfigFile.from_dict(raw)
+    assert cfg.globalSettings.screenReaderMode == "off"
+    assert cfg.globalSettings.speechRate == 0.75
+    assert cfg.globalSettings.ttsEnabled is False
 
 
 def test_invalid_json():
@@ -62,16 +82,42 @@ def test_roundtrip_canonical():
         # canonical compare: ignore createdAt/generator
         c1 = canonicalize_dict(original_raw)
         c2 = canonicalize_dict(reloaded_raw)
-        # Compare semantic parts
-        assert c1["schemaVersion"] == c2["schemaVersion"]
+        # Opening a v1 file migrates profile-level voice settings to v3 globals.
+        assert c1["schemaVersion"] == 1
+        assert c2["schemaVersion"] == 3
         assert c1["activeProfileId"] == c2["activeProfileId"]
-        assert c1["profiles"] == c2["profiles"]
-        assert c1["globalSettings"] == c2["globalSettings"]
+        assert c1["profiles"][0]["settings"]["accessibilityType"] == c2["profiles"][0]["settings"]["accessibilityType"]
+        assert c2["globalSettings"]["speechRate"] == c1["profiles"][0]["settings"]["speechRate"]
+        assert c2["globalSettings"]["screenReaderMode"] == c1["profiles"][0]["settings"]["screenReaderMode"]
         # metadata existence
         assert "createdAt" in reloaded_raw
-        assert reloaded_raw["schemaVersion"] == 1
+        assert reloaded_raw["schemaVersion"] == 3
     finally:
         pathlib.Path(path).unlink(missing_ok=True)
+
+
+def test_v3_global_options_are_preserved_on_open_and_save():
+    raw = models.ConfigFile(
+        profiles=[
+            models.AccessibilityProfile(
+                id="standard",
+                name="Standardní",
+                isBuiltIn=True,
+                settings=models.AccessibilitySettings.defaults_standard(),
+            )
+        ]
+    ).to_dict(include_metadata=False)
+    raw["globalSettings"]["statsComputedOrder"] = ["sampleVariance", "mean"]
+    raw["globalSettings"]["statsDisplayConfig"] = {"preset": "custom", "customShowN": True}
+    cfg = models.ConfigFile.from_dict(raw)
+
+    assert cfg.globalSettings.statsComputedOrder == ["sampleVariance", "mean"]
+    saved = cfg.to_dict(include_metadata=False)
+    assert saved["globalSettings"]["statsDisplayConfig"] == {
+        "preset": "custom",
+        "customShowN": True,
+    }
+    assert validate_contract(saved).ok
 
 
 def test_atomic_save_no_partial():

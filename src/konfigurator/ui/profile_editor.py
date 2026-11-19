@@ -25,7 +25,6 @@ from ..models import (
     AccessibilitySettings,
     DIALOG_SIZE_LABELS,
     INVERSE_PREF_LABELS,
-    SCREEN_READER_LABELS,
     THOUSAND_GAP_LABELS,
 )
 
@@ -119,8 +118,8 @@ class ProfileEditorDialog(QDialog):
         layout.addWidget(dispBox)
 
         # Oznamování
-        annBox = QGroupBox("Oznamování a čtečka")
-        annBox.setAccessibleName("Skupina oznamování a čtečka")
+        annBox = QGroupBox("Oznamování")
+        annBox.setAccessibleName("Skupina oznamování profilu")
         af = QFormLayout(annBox)
         self.announceCheck = QCheckBox("Oznamovat výraz před výpočtem")
         self.announceCheck.setAccessibleName("Oznamovat výraz před výpočtem")
@@ -130,53 +129,28 @@ class ProfileEditorDialog(QDialog):
         self.autoReadCheck.setAccessibleName("Automaticky číst statistický souhrn při otevření")
         self.hintCheck = QCheckBox("Nápověda pro pohyb v souhrnu")
         self.hintCheck.setAccessibleName("Zobrazit nápovědu pro pohyb v souhrnu")
-        self.screenReaderCombo = QComboBox()
-        self.screenReaderCombo.setAccessibleName("Režim čtečky obrazovky")
-        for v in ("auto", "on", "off"):
-            self.screenReaderCombo.addItem(SCREEN_READER_LABELS[v], v)
         self.accTypeCombo = QComboBox()
         self.accTypeCombo.setAccessibleName("Typ přístupnosti")
         for v in ("none", "blind", "visuallyImpaired"):
             self.accTypeCombo.addItem(ACCESSIBILITY_TYPE_LABELS[v], v)
         af.addRow("Typ přístupnosti:", self.accTypeCombo)
-        af.addRow("Režim čtečky:", self.screenReaderCombo)
         af.addRow(self.announceCheck)
         af.addRow(self.readStatsCheck)
         af.addRow(self.autoReadCheck)
         af.addRow(self.hintCheck)
         layout.addWidget(annBox)
 
-        # TTS
-        ttsBox = QGroupBox("Hlasový výstup (TTS)")
-        ttsBox.setAccessibleName("Skupina hlasový výstup")
-        tf = QFormLayout(ttsBox)
-        self.ttsEnabledCheck = QCheckBox("Hlas povolen")
-        self.ttsEnabledCheck.setAccessibleName("Povolit hlasový výstup")
-        self.speechRateSpin = self._make_double_spin(0.1, 1.0, 0.1, "Rychlost řeči")
-        self.speechVolumeSpin = self._make_double_spin(0.0, 1.0, 0.1, "Hlasitost")
-        self.ttsEngineEdit = QLineEdit()
-        self.ttsEngineEdit.setAccessibleName("TTS engine")
-        self.ttsEngineEdit.setPlaceholderText("Výchozí (prázdné)")
-        self.ttsVoiceNameEdit = QLineEdit()
-        self.ttsVoiceNameEdit.setAccessibleName("Název hlasu")
-        self.ttsVoiceNameEdit.setPlaceholderText("Výchozí")
-        self.ttsVoiceLocaleCombo = QComboBox()
-        self.ttsVoiceLocaleCombo.setAccessibleName("Jazyk hlasu")
-        self.ttsVoiceLocaleCombo.addItems(["", "cs-CZ", "en-US"])
-        self.ttsVoiceLocaleCombo.setEditable(True)
+        # Formátování úhlů zůstává nastavením profilu.
+        formatBox = QGroupBox("Formátování")
+        formatBox.setAccessibleName("Skupina formátování profilu")
+        formatForm = QFormLayout(formatBox)
         self.inverseCombo = QComboBox()
         self.inverseCombo.setAccessibleName("Formát úhlů")
         self.inverseCombo.addItem("Výchozí", "")
         for v in ("dms", "decimal"):
             self.inverseCombo.addItem(INVERSE_PREF_LABELS[v], v)
-        tf.addRow(self.ttsEnabledCheck)
-        tf.addRow("Rychlost (0.1-1.0):", self.speechRateSpin)
-        tf.addRow("Hlasitost (0.0-1.0):", self.speechVolumeSpin)
-        tf.addRow("Engine (prázdné=výchozí):", self.ttsEngineEdit)
-        tf.addRow("Hlas - jméno:", self.ttsVoiceNameEdit)
-        tf.addRow("Hlas - locale:", self.ttsVoiceLocaleCombo)
-        tf.addRow("Formát úhlů:", self.inverseCombo)
-        layout.addWidget(ttsBox)
+        formatForm.addRow("Formát úhlů:", self.inverseCombo)
+        layout.addWidget(formatBox)
 
         outer.addWidget(scroll)
         # Buttons
@@ -218,39 +192,13 @@ class ProfileEditorDialog(QDialog):
         self.readStatsCheck.setChecked(s.readStatsMemoryValues)
         self.autoReadCheck.setChecked(s.autoReadStatsSummary)
         self.hintCheck.setChecked(s.showStatsNavigationHint)
-        _set_combo_by_data(self.screenReaderCombo, s.screenReaderMode)
         _set_combo_by_data(self.accTypeCombo, s.accessibilityType)
-        self.ttsEnabledCheck.setChecked(s.ttsEnabled)
-        self.speechRateSpin.setValue(s.speechRate)
-        self.speechVolumeSpin.setValue(s.speechVolume)
-        self.ttsEngineEdit.setText(s.ttsEngine or "")
-        if s.ttsVoice:
-            self.ttsVoiceNameEdit.setText(s.ttsVoice.name)
-            self.ttsVoiceLocaleCombo.setCurrentText(s.ttsVoice.locale)
-        else:
-            self.ttsVoiceNameEdit.setText(s.ttsVoiceName or "")
-            self.ttsVoiceLocaleCombo.setCurrentText("")
         _set_combo_by_data(self.inverseCombo, s.inverseFormatPreference or "")
 
     def _collect(self) -> AccessibilitySettings:
-        from ..models import TtsVoice
-
-        voice = None
-        vname = self.ttsVoiceNameEdit.text().strip()
-        vlocale = self.ttsVoiceLocaleCombo.currentText().strip()
-        # If locale set, create voice; vname may be empty then use vlocale as name placeholder?
-        if vlocale:
-            # If name empty but locale present, use locale as fallback name is not valid; require name
-            if vname:
-                voice = TtsVoice(name=vname, locale=vlocale)
-            else:
-                # No voice if name missing — clear
-                voice = None
-        engine = self.ttsEngineEdit.text().strip() or None
         inv = self.inverseCombo.currentData() or None
         s = AccessibilitySettings(
             accessibilityType=self.accTypeCombo.currentData(),
-            screenReaderMode=self.screenReaderCombo.currentData(),
             fontSizeMultiplier=float(self.fontSpin.value()),
             dialogFontScale=float(self.dialogFontSpin.value()),
             dotMatrixZoom=float(self.dotSpin.value()),
@@ -266,12 +214,6 @@ class ProfileEditorDialog(QDialog):
             alignInputLeft=self.alignCheck.isChecked(),
             overlineThickness=float(self.thicknessSpin.value()),
             overlineHeight=float(self.heightSpin.value()),
-            speechRate=float(self.speechRateSpin.value()),
-            speechVolume=float(self.speechVolumeSpin.value()),
-            ttsEnabled=self.ttsEnabledCheck.isChecked(),
-            ttsEngine=engine,
-            ttsVoice=voice,
-            ttsVoiceName=vname or None,
             inverseFormatPreference=inv,
         )
         return s
