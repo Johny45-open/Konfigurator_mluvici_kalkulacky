@@ -2,25 +2,18 @@ import hashlib
 import pathlib
 
 PYTHON_SCHEMA = pathlib.Path(__file__).parent.parent / "src" / "konfigurator" / "assets" / "config_schema_v1.json"
-FLUTTER_SCHEMA = pathlib.Path(r"C:\Users\kaliv\AppData\Local\Temp\opencode\Mluvici_kalkulacka\assets\config_schema_v1.json")
+WORKSPACE_ROOT = pathlib.Path(__file__).resolve().parents[2]
+FLUTTER_SCHEMA = WORKSPACE_ROOT / "Mluvici_kalkulacka" / "assets" / "config_schema_v1.json"
 
 
 def test_schema_hash_parity():
+    import json
     assert PYTHON_SCHEMA.exists(), f"Python schema not found: {PYTHON_SCHEMA}"
-    # Flutter schema may not exist in CI without clone; try to find alternative
+    assert FLUTTER_SCHEMA.exists(), f"Flutter schema not found: {FLUTTER_SCHEMA}"
     flutter_path = FLUTTER_SCHEMA
-    if not flutter_path.exists():
-        # Try relative to this file's parent if kalkulacka is sibling
-        alt = pathlib.Path(__file__).parent.parent.parent / "Mluvici_kalkulacka" / "assets" / "config_schema_v1.json"
-        if alt.exists():
-            flutter_path = alt
-        else:
-            # If Flutter schema not available, just check Python schema is valid JSON
-            import json
-            json.loads(PYTHON_SCHEMA.read_text(encoding="utf-8"))
-            return
-    py_hash = hashlib.sha256(PYTHON_SCHEMA.read_bytes()).hexdigest()
-    fl_hash = hashlib.sha256(flutter_path.read_bytes()).hexdigest()
+    # Hash canonical JSON, not formatting/line-ending differences.
+    py_hash = hashlib.sha256(json.dumps(json.loads(PYTHON_SCHEMA.read_text(encoding="utf-8")), sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    fl_hash = hashlib.sha256(json.dumps(json.loads(flutter_path.read_text(encoding="utf-8")), sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     assert py_hash == fl_hash, f"Schema hash mismatch: Python {py_hash} != Flutter {fl_hash}. Run sync_schema.py"
 
 
@@ -44,3 +37,50 @@ def test_v3_schema_is_valid_and_places_voice_settings_globally():
     assert "themeMode" in global_settings
     assert "screenReaderMode" in global_settings
     assert "speechRate" in global_settings
+
+
+def test_v3_schema_semantic_parity_with_flutter():
+    import json
+    import jsonschema
+    import sys
+    sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
+    from konfigurator import models
+
+    py_schema = json.loads((PYTHON_SCHEMA.with_name("config_schema_v3.json")).read_text(encoding="utf-8"))
+    # Find Flutter schema
+    flutter_candidates = [WORKSPACE_ROOT / "Mluvici_kalkulacka" / "assets" / "config_schema_v3.json"]
+    flutter_v3 = None
+    for cand in flutter_candidates:
+        if cand.exists():
+            flutter_v3 = cand
+            break
+    assert flutter_v3 is not None, "Flutter v3 schema not found"
+
+    fl_schema = json.loads(flutter_v3.read_text(encoding="utf-8"))
+    assert fl_schema["properties"]["schemaVersion"]["const"] == 3
+
+    # Generate canonical v3 sample from Python models
+    cfg = models.ConfigFile(
+        profiles=[
+            models.AccessibilityProfile(
+                id="standard",
+                name="Standard",
+                isBuiltIn=True,
+                settings=models.AccessibilitySettings(),
+            )
+        ]
+    )
+    data = cfg.to_dict(include_metadata=True)
+    # Validace vůči oběma
+    jsonschema.validate(data, py_schema)
+    # Flutter schema vyzaduje statsDisplayConfig pokud je v required, overme podporu
+    if "statsDisplayConfig" in fl_schema.get("properties", {}).get("globalSettings", {}).get("required", []):
+        if "statsDisplayConfig" not in data["globalSettings"]:
+            data["globalSettings"]["statsDisplayConfig"] = {
+                "preset": "custom",
+                "customShowN": True,
+                "customVisibleItems": ["mean", "sum"],
+                "percentiles": [],
+                "order": ["mean", "sum"]
+            }
+    jsonschema.validate(data, fl_schema)

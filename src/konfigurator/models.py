@@ -9,7 +9,7 @@ import random
 from dataclasses import dataclass, field
 from typing import Optional
 
-APP_VERSION = "11.5.0"
+APP_VERSION = "20.7.0"
 SCHEMA_VERSION = 3
 
 # --- enums jako stringy (verejny kontrakt) ---
